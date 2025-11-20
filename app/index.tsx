@@ -5,12 +5,14 @@ import { Colors } from '@/constants/theme';
 export default function WelcomeScreen() {
 
   return (
-    <View style={styles.container}>
-      <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
-
-        <Text style={styles.buttonText}>Comenzar</Text>
-  
-    </View>
+    <View
+    style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+    <Text>Hello, world!</Text>
+  </View>
   );
 }
 
