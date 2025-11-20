@@ -84,9 +84,17 @@ const HomeScreen = () => {
           <Ionicons name="home-outline" size={24} color={Colors.light.tint} />
           <Text style={[styles.navText, { color: Colors.light.tint }]}>Home</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons name="home-outline" size={24} color={Colors.light.tint} />
+          <Text style={[styles.navText, { color: Colors.light.tint }]}>Home</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/LoginScreen')}>
           <Ionicons name="log-in-outline" size={24} color="#888" />
           <Text style={styles.navText}>Login</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons name="home-outline" size={24} color={Colors.light.tint} />
+          <Text style={[styles.navText, { color: Colors.light.tint }]}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="person-outline" size={24} color="#888" />
