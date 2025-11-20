@@ -1,13 +1,10 @@
 
 import React from 'react';
-
-import "../global.css"
  
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import tw from 'twrnc';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 
@@ -26,7 +23,7 @@ const HomeScreen = () => {
               <Text style={styles.profileIconText}>D</Text>
             </View>
             <View>
-              <Text style={tw`text-white text-2xl font-bold`}>Welcome Denis D!</Text>
+              <Text className='bg-red'>Welcome Denis D! g</Text>
             </View>
           </View>
           <View style={styles.searchContainer}>
