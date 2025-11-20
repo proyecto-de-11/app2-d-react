@@ -16,6 +16,7 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
+import axios from 'axios';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -42,9 +43,28 @@ const LoginScreen = () => {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  const handleLogin = () => {
-    Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
-    router.push('/');
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/login', {
+        email,
+        password,
+      });
+
+      if (response.data.token) {
+        const { token, id } = response.data;
+        console.log('Token de sesión:', token);
+        console.log('ID de usuario:', id);
+        Alert.alert('Inicio de Sesión Exitoso', `¡Bienvenido!
+Token: ${token}
+ID de Usuario: ${id}`);
+        router.push('/');
+      } else {
+        Alert.alert('Error de Inicio de Sesión', 'Credenciales inválidas. Inténtalo de nuevo.');
+      }
+    } catch (error) {
+      console.error('Error de inicio de sesión:', error);
+      Alert.alert('Error', 'Ocurrió un error al intentar iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
+    }
   };
 
   return (
@@ -101,7 +121,7 @@ const LoginScreen = () => {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text onPress={handleLogin} style={styles.buttonText}>Iniciar Sesión</Text>
+                <Text style={styles.buttonText}>Iniciar Sesión</Text>
               </LinearGradient>
             </TouchableOpacity>
 
