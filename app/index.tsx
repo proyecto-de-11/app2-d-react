@@ -6,11 +6,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+// En lugar de @expo/vector-icons
+import { IoHomeOutline, IoSearchOutline, IoChatbubbleOutline, IoPersonOutline } from 'react-icons/io5';
+
+
 
 
 
 const HomeScreen = () => {
   const router = useRouter();
+
+  
 
 
 
@@ -83,7 +89,7 @@ const HomeScreen = () => {
           <Text style={[styles.navText, { color: Colors.light.tint }]}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screen_a/ListUsuarios')}>
-          <Ionicons  name="home-outline" size={24} color={Colors.light.tint} />
+          <IoHomeOutline />
           <Text className='text-xl font-bold text-red-500' style={[styles.navText, { color: Colors.light.tint }]}>Buscar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/LoginScreen')}>
