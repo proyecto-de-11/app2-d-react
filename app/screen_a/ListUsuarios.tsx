@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, StyleSheet, Image, TextInput } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
 const users = [
@@ -11,6 +11,12 @@ const users = [
 ];
 
 const ListUsuarios = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
       <Image source={{ uri: item.avatar }} style={styles.avatar} />
@@ -22,15 +28,32 @@ const ListUsuarios = () => {
   );
 
   return (
-    <FlatList
-      data={users}
-      renderItem={renderItem}
-      keyExtractor={item => item.id}
-    />
+    <View style={styles.container}>
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Buscar..."
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+      />
+      <FlatList
+        data={filteredUsers}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  searchBar: {
+    padding: 10,
+    margin: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+  },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
