@@ -3,11 +3,11 @@ import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
 const users = [
-  { id: '1', name: 'Ivanr', avatar: 'https://placekitten.com/200/200' },
-  { id: '2', name: 'Test Hiculos', avatar: 'https://placekitten.com/201/201' },
-  { id: '3', name: 'WhatsApp', avatar: 'https://placekitten.com/202/202' },
-  { id: '4', name: '+1 (904)', avatar: 'https://placekitten.com/203/203' },
-  { id: '5', name: 'Ivanr, Lau y Sam', avatar: 'https://placekitten.com/204/204' },
+  { id: '1', name: 'Ivanr', avatar: 'https://images.unsplash.com/photo-1762324858945-3fd82fe78bcd?q=80&w=770&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: '2', name: 'Test Hiculos', avatar: 'https://images.unsplash.com/photo-1762324858945-3fd82fe78bcd?q=80&w=770&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: '3', name: 'WhatsApp', avatar: 'https://images.unsplash.com/photo-1762770647310-66f492eb832f?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: '4', name: '+1 (904)', avatar: 'https://images.unsplash.com/photo-1762770647310-66f492eb832f?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
+  { id: '5', name: 'Ivanr, Lau y Sam', avatar: 'https://images.unsplash.com/photo-1762770647310-66f492eb832f?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
 ];
 
 const ListUsuarios = () => {
