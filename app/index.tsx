@@ -1,7 +1,8 @@
 
 import React from 'react';
 
-
+import "../global.css"
+ 
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -45,7 +46,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.categoryBox}>
               <MaterialCommunityIcons name="basketball" size={32} color="#4A90E2" />
-              <Text style={styles.categoryText}>Básquet</Text>
+              <Text className='bg-gray-100' style={styles.categoryText}>Básquet</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.categoryBox}>
                <MaterialCommunityIcons name="tennis" size={32} color="#4A90E2" />
@@ -65,7 +66,7 @@ const HomeScreen = () => {
                 source={{ uri: 'https://via.placeholder.com/150/FFC107/000000?Text=Cancha+1' }}
                 style={styles.promotionImage}
               />
-              <Text style={styles.promotionText}>Lorem ipsum dolor sit amet, consectetuer</Text>
+              <Text className='text-xl font-bold text-red-500'>Lorem ipsum dolor sit amet, consectetuer</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.promotionCard}>
               <Image 
@@ -86,7 +87,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screen_a/ListUsuarios')}>
           <Ionicons  name="home-outline" size={24} color={Colors.light.tint} />
-          <Text style={[styles.navText, { color: Colors.light.tint }]}>Buscar</Text>
+          <Text className='text-xl font-bold text-red-500' style={[styles.navText, { color: Colors.light.tint }]}>Buscar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/LoginScreen')}>
           <Ionicons name="log-in-outline" size={24} color="#888" />
