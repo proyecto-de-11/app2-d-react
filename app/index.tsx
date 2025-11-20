@@ -1,37 +1,27 @@
 
 import React from 'react';
  
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-// En lugar de @expo/vector-icons
-
-import { Home, Search, MessageCircle, User } from 'lucide-react-native';
-
-
-
-
+import { Search } from 'lucide-react-native';
 
 const HomeScreen = () => {
   const router = useRouter();
-
-  
-
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View style={styles.profileIcon}>
-              <Text style={styles.profileIconText}>D</Text>
-            </View>
             <View>
-              <Text className='bg-primary-500 text-green text-xl font-bold'>Welcome Denis D! g</Text>
+              <Text style={styles.welcomeText}>Welcome Denis D!</Text>
             </View>
+            <TouchableOpacity style={styles.profileIcon} onPress={() => router.push('/screens/ProfileScreen')}>
+              <Text style={styles.profileIconText}>D</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.searchContainer}>
             <TextInput
@@ -50,7 +40,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.categoryBox}>
               <MaterialCommunityIcons name="basketball" size={32} color="#4A90E2" />
-              <Text className='bg-gray-100' style={styles.categoryText}>Básquet</Text>
+              <Text style={styles.categoryText}>Básquet</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.categoryBox}>
                <MaterialCommunityIcons name="tennis" size={32} color="#4A90E2" />
@@ -70,7 +60,7 @@ const HomeScreen = () => {
                 source={{ uri: 'https://via.placeholder.com/150/FFC107/000000?Text=Cancha+1' }}
                 style={styles.promotionImage}
               />
-              <Text className='text-xl font-bold text-blue-500'>Lorem ipsum dolor sit amet, consectetuer</Text>
+              <Text style={styles.promotionText}>Lorem ipsum dolor sit amet, consectetuer</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.promotionCard}>
               <Image 
@@ -90,18 +80,18 @@ const HomeScreen = () => {
           <Text style={[styles.navText, { color: Colors.light.tint }]}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screen_a/ListUsuarios')}>
-          <Search />
-          <Text className='text-xl font-bold text-red-500' style={[styles.navText, { color: Colors.light.tint }]}>Buscar</Text>
+          <Search size={24} color="#888" />
+          <Text style={styles.navText}>Buscar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/LoginScreen')}>
           <Ionicons name="log-in-outline" size={24} color="#888" />
           <Text style={styles.navText}>Login</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home-outline" size={24} color={Colors.light.tint} />
-          <Text style={[styles.navText, { color: Colors.light.tint }]}>Chat</Text>
+          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#888" />
+          <Text style={styles.navText}>Chat</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/ProfileScreen')}>
           <Ionicons name="person-outline" size={24} color="#888" />
           <Text style={styles.navText}>User</Text>
         </TouchableOpacity>
@@ -126,19 +116,24 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   profileIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
   },
   profileIconText: {
     color: '#4A90E2',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  welcomeText: {
+    color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -162,8 +157,8 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     paddingHorizontal: 20,
-    paddingTop: 40, // Space for the search bar
-    paddingBottom: 80, // Added padding for the bottom nav
+    paddingTop: 40,
+    paddingBottom: 80,
   },
   categoriesContainer: {
     flexDirection: 'row',

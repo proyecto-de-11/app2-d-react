@@ -12,6 +12,7 @@ export default function RootLayout() {
       <Stack.Screen name="screens/LoginScreen" options={{headerShown:false }} />
       <Stack.Screen name="screen_a/ListUsuarios" options={{headerShown:false }} />
       <Stack.Screen name="screens/HomeScreen" options={{ title: 'Inicio' }} />
+      <Stack.Screen name="screens/ProfileScreen" options={{headerShown:false }} />
     </Stack>
   );
 }

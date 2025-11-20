@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -50,20 +51,34 @@ const LoginScreen = () => {
         password,
       });
 
-      if (response.data.token) {
+      if (response.data.token && response.data.userId) {
         const { token, userId } = response.data;
-        console.log('Token de sesión:', token);
-        console.log('ID de usuario:', userId);
-        Alert.alert('Inicio de Sesión Exitoso', `¡Bienvenido!
-Token: ${token}
-ID de Usuario: ${userId}`);
-        router.push('/');
+        
+        await AsyncStorage.setItem('userToken', token);
+        await AsyncStorage.setItem('userId', String(userId));
+
+        Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
+        router.replace('/');
       } else {
-        Alert.alert('Error de Inicio de Sesión', 'Credenciales inválidas. Inténtalo de nuevo.');
+        Alert.alert('Error de Inicio de Sesión', 'La respuesta de la API no contiene el token o el ID de usuario.');
       }
     } catch (error) {
-      console.error('Error de inicio de sesión:', error);
-      Alert.alert('Error', 'Ocurrió un error al intentar iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
+      console.error('Error de inicio de sesión:', JSON.stringify(error, null, 2));
+
+      let errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+
+      if (error.response) {
+        // El servidor respondió con un error (ej: 401, 404, 500)
+        errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'Credenciales incorrectas.'}`;
+      } else if (error.request) {
+        // La petición se hizo pero no se recibió respuesta
+        errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
+      } else {
+        // Otro tipo de error
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      Alert.alert('Error de Inicio de Sesión', errorMessage);
     }
   };
 
