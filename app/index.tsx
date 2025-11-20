@@ -2,6 +2,8 @@
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
+import tw from 'twrnc';
+
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -11,6 +13,7 @@ export default function WelcomeScreen() {
       <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
       <Pressable style={styles.button} onPress={() => router.push('/screens/LoginScreen')}>
         <Text style={styles.buttonText}>Comenzar</Text>
+        <Text style={tw`text-red-500 font-bold`}>Hola</Text>
       </Pressable>
     </View>
   );
