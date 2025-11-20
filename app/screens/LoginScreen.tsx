@@ -1,8 +1,20 @@
 
-import React from 'react';
-import { StyleSheet, View, TextInput, Text, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, TextInput, Text, TouchableOpacity, Image, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const router = useRouter();
+
+  const handleLogin = () => {
+    // Aquí puedes agregar tu lógica de autenticación
+    // Por ahora, solo mostraremos una alerta de éxito
+    Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
+    router.push('../screens/HomeScreen');
+  };
+
   return (
     <View style={styles.container}>
       <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
@@ -12,13 +24,21 @@ const LoginScreen = ({ navigation }) => {
         placeholder="Correo Electrónico"
         keyboardType="email-address"
         autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
       />
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
         secureTextEntry
+        value={password}
+        onChangeText={setPassword}
       />
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Home')}>
+      <TouchableOpacity
+        style={[styles.button, !(email && password) && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={!(email && password)}
+      >
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
       <TouchableOpacity style={[styles.button, styles.buttonOutline]}>
@@ -63,6 +83,9 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0cfff',
   },
   buttonText: {
     color: 'white',

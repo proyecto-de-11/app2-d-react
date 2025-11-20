@@ -1,18 +1,18 @@
-import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 
+import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 
 export default function WelcomeScreen() {
+  const router = useRouter();
 
   return (
-    <View
-    style={{
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}>
-    <Text>Hello, world!</Text>
-  </View>
+    <View style={styles.container}>
+      <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
+      <Pressable style={styles.button} onPress={() => router.push('/screens/LoginScreen')}>
+        <Text style={styles.buttonText}>Comenzar</Text>
+      </Pressable>
+    </View>
   );
 }
 
