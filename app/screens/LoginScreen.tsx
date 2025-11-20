@@ -51,12 +51,12 @@ const LoginScreen = () => {
       });
 
       if (response.data.token) {
-        const { token, id } = response.data;
+        const { token, userId } = response.data;
         console.log('Token de sesión:', token);
-        console.log('ID de usuario:', id);
+        console.log('ID de usuario:', userId);
         Alert.alert('Inicio de Sesión Exitoso', `¡Bienvenido!
 Token: ${token}
-ID de Usuario: ${id}`);
+ID de Usuario: ${userId}`);
         router.push('/');
       } else {
         Alert.alert('Error de Inicio de Sesión', 'Credenciales inválidas. Inténtalo de nuevo.');
