@@ -44,7 +44,7 @@ const LoginScreen = () => {
 
   const handleLogin = () => {
     Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
-    router.push('../screens/HomeScreen');
+    router.push('/');
   };
 
   return (
@@ -101,7 +101,7 @@ const LoginScreen = () => {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                <Text onPress={handleLogin} style={styles.buttonText}>Iniciar Sesión</Text>
               </LinearGradient>
             </TouchableOpacity>
 
