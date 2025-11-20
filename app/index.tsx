@@ -7,7 +7,8 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 // En lugar de @expo/vector-icons
-import { IoHomeOutline, IoSearchOutline, IoChatbubbleOutline, IoPersonOutline } from 'react-icons/io5';
+
+import { Home, Search, MessageCircle, User } from 'lucide-react-native';
 
 
 
@@ -89,7 +90,7 @@ const HomeScreen = () => {
           <Text style={[styles.navText, { color: Colors.light.tint }]}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screen_a/ListUsuarios')}>
-          <IoHomeOutline />
+          <Search />
           <Text className='text-xl font-bold text-red-500' style={[styles.navText, { color: Colors.light.tint }]}>Buscar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/LoginScreen')}>
