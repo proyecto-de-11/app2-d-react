@@ -1,14 +1,31 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+
+
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import tw from 'twrnc';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { useFonts } from 'expo-font';
+
+
 const HomeScreen = () => {
   const router = useRouter();
+
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font, // O FontAwesome.font, dependiendo de cuál uses
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
