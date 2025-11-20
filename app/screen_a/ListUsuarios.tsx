@@ -2,6 +2,7 @@ import { useState } from 'react';
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TextInput } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const users = [
   { id: '1', name: 'Ivanr', avatar: 'https://images.unsplash.com/photo-1762324858945-3fd82fe78bcd?q=80&w=770&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
@@ -12,6 +13,7 @@ const users = [
 ];
 
 const ListUsuarios = () => {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredUsers = users.filter(user =>
@@ -29,6 +31,13 @@ const ListUsuarios = () => {
   );
 
   return (
+    <View style={{
+      flex: 1,
+      paddingTop: insets.top,
+      paddingBottom: insets.bottom,
+    }}>
+     
+
     <View style={styles.container}>
       <TextInput
         style={styles.searchBar}
@@ -41,6 +50,8 @@ const ListUsuarios = () => {
         renderItem={renderItem}
         keyExtractor={item => item.id}
       />
+    </View>
+
     </View>
   );
 };
