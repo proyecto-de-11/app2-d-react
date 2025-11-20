@@ -1,104 +1,217 @@
 
-import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Text, TouchableOpacity, Image, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  StyleSheet, 
+  View, 
+  TextInput, 
+  Text, 
+  TouchableOpacity, 
+  Image, 
+  Alert,
+  Animated,
+  Easing,
+  KeyboardAvoidingView,
+  Platform
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 1000,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
   const handleLogin = () => {
-    // Aquí puedes agregar tu lógica de autenticación
-    // Por ahora, solo mostraremos una alerta de éxito
     Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
     router.push('../screens/HomeScreen');
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
-      <Text style={styles.title}>Bienvenido</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Correo Electrónico"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <TouchableOpacity
-        style={[styles.button, !(email && password) && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={!(email && password)}
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <LinearGradient
+        colors={['#1c1e2a', '#2a2d3e']}
+        style={styles.background}
       >
-        <Text style={styles.buttonText}>Iniciar Sesión</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, styles.buttonOutline]}>
-        <Text style={[styles.buttonText, styles.buttonOutlineText]}>Crear Cuenta</Text>
-      </TouchableOpacity>
-    </View>
+        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          <View style={styles.headerContainer}>
+            <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
+            <Text style={styles.title}>Bienvenido</Text>
+            <Text style={styles.subtitle}>Inicia sesión para una experiencia increíble</Text>
+          </View>
+
+          <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <Feather name="mail" size={20} color="#8a8d97" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Correo Electrónico"
+                placeholderTextColor="#8a8d97"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Feather name="lock" size={20} color="#8a8d97" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Contraseña"
+                placeholderTextColor="#8a8d97"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleLogin}
+              disabled={!(email && password)}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={!(email && password) ? ['#4a4e69', '#3a3d51'] : ['#8e44ad', '#c0392b']}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.buttonText}>Iniciar Sesión</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.footer}>
+              <TouchableOpacity>
+                <Text style={styles.footerText}>¿No tienes una cuenta? <Text style={styles.signUpText}>Regístrate</Text></Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      </LinearGradient>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  background: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
+  },
+  contentContainer: {
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
   },
   logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 30,
+    width: 100,
+    height: 100,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    height: 50,
-    width: '100%',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 20,
-    paddingHorizontal: 15,
-  },
-  button: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
+    color: '#fff',
     marginBottom: 10,
   },
-  buttonDisabled: {
-    backgroundColor: '#a0cfff',
+  subtitle: {
+    fontSize: 16,
+    color: '#aab1d6',
+  },
+  formContainer: {
+    width: '100%',
+    backgroundColor: '#2a2d3e',
+    borderRadius: 20,
+    padding: 30,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1c1e2a',
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  inputIcon: {
+    padding: 15,
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    color: '#fff',
+    paddingRight: 15,
+  },
+  button: {
+    borderRadius: 10,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  buttonGradient: {
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   buttonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  buttonOutline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#007BFF',
+  footer: {
+    marginTop: 20,
+    alignItems: 'center',
   },
-  buttonOutlineText: {
-    color: '#007BFF',
+  footerText: {
+    color: '#aab1d6',
+  },
+  signUpText: {
+    color: '#8e44ad',
+    fontWeight: 'bold',
   },
 });
 
