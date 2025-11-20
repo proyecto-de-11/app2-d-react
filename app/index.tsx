@@ -23,7 +23,7 @@ const HomeScreen = () => {
               <Text style={styles.profileIconText}>D</Text>
             </View>
             <View>
-              <Text className='bg-red'>Welcome Denis D! g</Text>
+              <Text className='bg-primary-500 text-green text-xl font-bold'>Welcome Denis D! g</Text>
             </View>
           </View>
           <View style={styles.searchContainer}>
@@ -63,7 +63,7 @@ const HomeScreen = () => {
                 source={{ uri: 'https://via.placeholder.com/150/FFC107/000000?Text=Cancha+1' }}
                 style={styles.promotionImage}
               />
-              <Text className='text-xl font-bold text-red-500'>Lorem ipsum dolor sit amet, consectetuer</Text>
+              <Text className='text-xl font-bold text-blue-500'>Lorem ipsum dolor sit amet, consectetuer</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.promotionCard}>
               <Image 
