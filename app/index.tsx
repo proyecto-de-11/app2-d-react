@@ -1,32 +1,72 @@
 
-import React from 'react';
- 
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons'; // Added Feather here
 import { Search } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const HomeScreen = () => {
   const router = useRouter();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        const token = await AsyncStorage.getItem('userToken');
+
+        if (!userId || !token) {
+          router.replace('/screens/LoginScreen');
+          return;
+        }
+
+        const response = await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUserData(response.data);
+      } catch (error) {
+        console.error("Failed to fetch user data for home screen:", error);
+        await AsyncStorage.clear();
+        router.replace('/screens/LoginScreen');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  // Safer way to get the first name
+  const firstName = userData?.nombreCompleto ? userData.nombreCompleto.split(' ')[0] : '';
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.welcomeText}>Welcome Denis D!</Text>
+            <View style={styles.welcomeContainer}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.welcomeText}>¡Hola, {firstName}!</Text>
+              )}
             </View>
-            <TouchableOpacity style={styles.profileIcon} onPress={() => router.push('/screens/ProfileScreen')}>
-              <Text style={styles.profileIconText}>D</Text>
+            <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/screens/ProfileScreen')}>
+              {loading || !userData?.fotoPerfil ? (
+                 <View style={styles.profileIconPlaceholder}><Feather name="user" size={30} color="#4A90E2" /></View>
+              ) : (
+                <Image source={{ uri: userData.fotoPerfil }} style={styles.profileImage} />
+              )}
             </TouchableOpacity>
           </View>
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search"
+              placeholder="Buscar canchas..."
               placeholderTextColor="#999"
             />
           </View>
@@ -52,7 +92,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.promotionsTitle}>Promotions</Text>
+          <Text style={styles.promotionsTitle}>Promociones</Text>
 
           <View style={styles.promotionsGrid}>
             <TouchableOpacity style={styles.promotionCard}>
@@ -60,14 +100,14 @@ const HomeScreen = () => {
                 source={{ uri: 'https://via.placeholder.com/150/FFC107/000000?Text=Cancha+1' }}
                 style={styles.promotionImage}
               />
-              <Text style={styles.promotionText}>Lorem ipsum dolor sit amet, consectetuer</Text>
+              <Text style={styles.promotionText}>Reserva 2 horas y paga 1</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.promotionCard}>
               <Image 
                 source={{ uri: 'https://via.placeholder.com/150/4CAF50/FFFFFF?Text=Cancha+2' }}
                 style={styles.promotionImage}
               />
-              <Text style={styles.promotionText}>Lorem ipsum dolor sit amet.</Text>
+              <Text style={styles.promotionText}>Descuento para estudiantes</Text>
             </TouchableOpacity>
           </View>
 
@@ -76,16 +116,12 @@ const HomeScreen = () => {
       
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home-outline" size={24} color={Colors.light.tint} />
-          <Text style={[styles.navText, { color: Colors.light.tint }]}>Home</Text>
+          <Ionicons name="home" size={24} color={Colors.light.tint} />
+          <Text style={[styles.navText, { color: Colors.light.tint }]}>Inicio</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screen_a/ListUsuarios')}>
-          <Search size={24} color="#888" />
+          <Ionicons name="search" size={24} color="#888" />
           <Text style={styles.navText}>Buscar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/LoginScreen')}>
-          <Ionicons name="log-in-outline" size={24} color="#888" />
-          <Text style={styles.navText}>Login</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="chatbubble-ellipses-outline" size={24} color="#888" />
@@ -93,7 +129,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/ProfileScreen')}>
           <Ionicons name="person-outline" size={24} color="#888" />
-          <Text style={styles.navText}>User</Text>
+          <Text style={styles.navText}>Perfil</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -119,23 +155,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  profileIcon: {
+  welcomeContainer: {
+    flex: 1,
+  },
+  welcomeText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  profileButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 15,
   },
-  profileIconText: {
-    color: '#4A90E2',
-    fontSize: 28,
-    fontWeight: 'bold',
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
   },
-  welcomeText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
+  profileIconPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchContainer: {
     position: 'absolute',

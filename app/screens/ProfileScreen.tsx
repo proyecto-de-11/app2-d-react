@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -26,7 +26,6 @@ const ProfileScreen = () => {
         const response = await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
-
         setUserData(response.data);
       } catch (error) {
         console.error("Failed to fetch user data:", error);
@@ -36,7 +35,6 @@ const ProfileScreen = () => {
         setLoading(false);
       }
     };
-
     fetchUserData();
   }, []);
 
@@ -57,71 +55,60 @@ const ProfileScreen = () => {
   if (!userData) {
     return (
       <LinearGradient colors={['#1c1e2a', '#2a2d3e']} style={styles.loadingContainer}>
-        <Text style={styles.name}>No se encontraron datos del usuario.</Text>
+        <Text style={styles.errorText}>No se encontraron datos del usuario.</Text>
       </LinearGradient>
     );
   }
-
-  const formattedDate = userData.fechaNacimiento 
-    ? new Date(userData.fechaNacimiento).toLocaleDateString('es-ES', {
-        day: '2-digit', month: 'long', year: 'numeric' 
-      }) 
-    : 'No especificada';
+  
+  const InfoRow = ({ icon, label, value }) => (
+    <>
+      <View style={styles.infoRow}>
+        <Feather name={icon} size={20} color="#8a8d97" style={styles.infoIcon} />
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue}>{value}</Text>
+      </View>
+      <View style={styles.divider} />
+    </>
+  );
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={['#1c1e2a', '#2a2d3e']}
-        style={styles.background}
-      >
-        <View style={styles.profileContainer}>
+    <LinearGradient colors={['#1c1e2a', '#2a2d3e']} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* Main Profile Card */}
+        <View style={styles.card}>
           <Image 
             source={{ uri: userData.fotoPerfil || 'https://via.placeholder.com/150' }} 
             style={styles.avatar} 
           />
           <Text style={styles.name}>{userData.nombreCompleto}</Text>
           <Text style={styles.email}>{userData.usuario.email}</Text>
+          <Text style={styles.biography}>{userData.biografia}</Text>
+        </View>
 
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editButtonText}>Editar Perfil</Text>
-            <Feather name="edit-2" size={20} color="#fff" style={styles.editIcon} />
+        {/* Details Card */}
+        <View style={styles.card}>
+          <InfoRow icon="shield" label="Documento" value={userData.documentoIdentidad} />
+          <InfoRow icon="gift" label="Nacimiento" value={new Date(userData.fechaNacimiento).toLocaleDateString('es-ES')} />
+          <InfoRow icon="user" label="Género" value={userData.genero} />
+          <InfoRow icon="phone" label="Teléfono" value={userData.telefono} />
+          <InfoRow icon="map-pin" label="Ubicación" value={`${userData.ciudad}, ${userData.pais}`} />
+        </View>
+
+        {/* Actions Card */}
+        <View style={styles.card}>
+           <TouchableOpacity style={styles.actionRow}>
+            <Feather name="edit" size={20} color="#8a8d97" style={styles.actionIcon} />
+            <Text style={styles.actionText}>Editar Perfil</Text>
+            <Feather name="chevron-right" size={20} color="#8a8d97" />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.actionRow} onPress={handleLogout}>
+            <Feather name="log-out" size={20} color="#c0392b" style={styles.actionIcon} />
+            <Text style={[styles.actionText, styles.logoutText]}>Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.infoContainer}>
-            <Text style={styles.infoTitle}>Información Personal</Text>
-             <View style={styles.infoRow}>
-              <Feather name="info" size={16} color="#aab1d6" />
-              <Text style={styles.infoText}>{userData.biografia}</Text>
-            </View>
-             <View style={styles.infoRow}>
-              <Feather name="hash" size={16} color="#aab1d6" />
-              <Text style={styles.infoText}>{userData.documentoIdentidad}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Feather name="calendar" size={16} color="#aab1d6" />
-              <Text style={styles.infoText}>{formattedDate}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Feather name="tag" size={16} color="#aab1d6" />
-              <Text style={styles.infoText}>{userData.genero}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Feather name="phone" size={16} color="#aab1d6" />
-              <Text style={styles.infoText}>{userData.telefono}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Feather name="map-pin" size={16} color="#aab1d6" />
-              <Text style={styles.infoText}>{userData.ciudad}, {userData.pais}</Text>
-            </View>
-        </View>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
-
-      </LinearGradient>
-    </View>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
@@ -134,85 +121,94 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  background: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: 80,
+  scrollContainer: {
+    paddingVertical: 30,
+    paddingHorizontal: 15,
   },
-  profileContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
+  card: {
+    backgroundColor: '#2a2d3e',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
   },
+  // Profile Card Styles
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: '#8e44ad',
+    alignSelf: 'center',
+    marginBottom: 15,
   },
   name: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#fff',
-    marginTop: 15,
     textAlign: 'center',
   },
   email: {
     fontSize: 16,
     color: '#aab1d6',
+    textAlign: 'center',
     marginTop: 5,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#8e44ad',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginTop: 20,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  editIcon: {
-    marginLeft: 10,
-  },
-  infoContainer: {
-    width: '90%',
-    marginTop: 30,
-    backgroundColor: '#2a2d3e',
-    borderRadius: 15,
-    padding: 20,
-  },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 15,
   },
+  biography: {
+    fontSize: 14,
+    color: '#fff',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  // Details Card Styles
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#aab1d6',
-    marginLeft: 10,
-  },
-  logoutButton: {
-    position: 'absolute',
-    bottom: 40,
-    backgroundColor: '#c0392b',
     paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 25,
   },
-  logoutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  infoIcon: {
+    marginRight: 15,
+  },
+  infoLabel: {
     fontSize: 16,
+    color: '#aab1d6',
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#3a3d51',
+  },
+  // Actions Card Styles
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  actionIcon: {
+    marginRight: 15,
+  },
+  actionText: {
+    fontSize: 16,
+    color: '#fff',
+    flex: 1,
+  },
+  logoutText: {
+    color: '#c0392b',
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#fff',
+    fontSize: 18,
   },
 });
 
