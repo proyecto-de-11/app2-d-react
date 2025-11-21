@@ -16,13 +16,11 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 
 const CreateAccountScreen = () => {
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const router = useRouter();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -46,16 +44,12 @@ const CreateAccountScreen = () => {
   }, [fadeAnim, slideAnim]);
 
   const handleCreateAccount = async () => {
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden.');
-      return;
-    }
-
     try {
       const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/register', {
-        username,
         email,
-        password,
+        contrasena: password, // The API expects 'contrasena'
+        idRol: 2, // Default value
+        estaActivo: true, // Default value
       });
 
       Alert.alert('Cuenta Creada', 'Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.');
@@ -66,11 +60,15 @@ const CreateAccountScreen = () => {
 
       let errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
-      if (error.response) {
-        errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear la cuenta.'}`;
-      } else if (error.request) {
-        errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
-      } else {
+      if (isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear la cuenta.'}`;
+        } else if (error.request) {
+          errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      } else if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
       
@@ -96,18 +94,6 @@ const CreateAccountScreen = () => {
 
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Feather name="user" size={20} color="#8a8d97" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Nombre de Usuario"
-                placeholderTextColor="#8a8d97"
-                autoCapitalize="none"
-                value={username}
-                onChangeText={setUsername}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
               <Feather name="mail" size={20} color="#8a8d97" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -132,26 +118,14 @@ const CreateAccountScreen = () => {
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Feather name="lock" size={20} color="#8a8d97" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirmar Contraseña"
-                placeholderTextColor="#8a8d97"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
-            </View>
-
             <TouchableOpacity
               style={styles.button}
               onPress={handleCreateAccount}
-              disabled={!(username && email && password && confirmPassword)}
+              disabled={!(email && password)}
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={!(username && email && password && confirmPassword) ? ['#4a4e69', '#3a3d51'] : ['#8e44ad', '#c0392b']}
+                colors={!(email && password) ? ['#4a4e69', '#3a3d51'] : ['#8e44ad', '#c0392b']}
                 style={styles.buttonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
