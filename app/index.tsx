@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,32 +13,47 @@ const HomeScreen = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [isProfileModalVisible, setProfileModalVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userId = await AsyncStorage.getItem('userId');
-        const token = await AsyncStorage.getItem('userToken');
+  const fetchUserData = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('userToken');
 
-        if (!userId || !token) {
-          router.replace('/screens/LoginScreen');
-          return;
-        }
-
-        const response = await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUserData(response.data);
-      } catch (error) {
-        console.error("Failed to fetch user data for home screen:", error);
-        await AsyncStorage.clear();
+      if (!userId || !token) {
         router.replace('/screens/LoginScreen');
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
-    fetchUserData();
-  }, []);
+
+      const response = await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUserData(response.data);
+    } catch (error) {
+      if (error.response && error.response.status !== 404) {
+          console.error("Failed to fetch user data for home screen:", error);
+          await AsyncStorage.clear();
+          router.replace('/screens/LoginScreen');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const checkProfileStatus = async () => {
+        const profileExists = await AsyncStorage.getItem('profileExists');
+        if (profileExists === 'false') {
+          setProfileModalVisible(true);
+        } else {
+          setProfileModalVisible(false);
+          fetchUserData();
+        }
+      };
+      checkProfileStatus();
+    }, [])
+  );
 
   const handleLogout = async () => {
     setMenuVisible(false);
@@ -50,11 +65,36 @@ const HomeScreen = () => {
     setMenuVisible(false);
     router.push('/screens/ProfileScreen');
   };
-  
-  const firstName = userData?.nombreCompleto ? userData.nombreCompleto.split(' ')[0] : '';
+
+  const navigateToCreateProfile = () => {
+    setProfileModalVisible(false);
+    router.push('/screens/EditProfileScreen');
+  };
+
+  const firstName = userData?.nombreCompleto ? userData.nombreCompleto.split(' ')[0] : 'Usuario';
 
   return (
     <SafeAreaView style={styles.safeArea}>
+
+      <Modal
+        visible={isProfileModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.profileModalOverlay}>
+          <View style={styles.profileModalContainer}>
+            <Feather name="info" size={40} color="#4A90E2" />
+            <Text style={styles.profileModalTitle}>¡Completa tu perfil!</Text>
+            <Text style={styles.profileModalText}>
+              Para disfrutar de todas las funcionalidades, por favor, crea tu perfil de usuario.
+            </Text>
+            <TouchableOpacity style={styles.profileModalButton} onPress={navigateToCreateProfile}>
+              <Text style={styles.profileModalButtonText}>Crear Perfil</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         transparent={true}
@@ -312,7 +352,6 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 2,
   },
-  // Menu styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -345,7 +384,50 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#eee',
     marginVertical: 5,
-  }
+  },
+  profileModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileModalContainer: {
+    width: '85%',
+    backgroundColor: '#2a2d3e',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  profileModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#fff',
+  },
+  profileModalText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 25,
+    color: '#aab1d6',
+    lineHeight: 22,
+  },
+  profileModalButton: {
+    backgroundColor: '#8e44ad',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    elevation: 2,
+  },
+  profileModalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
 export default HomeScreen;

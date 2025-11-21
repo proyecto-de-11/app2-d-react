@@ -57,8 +57,24 @@ const LoginScreen = () => {
         await AsyncStorage.setItem('userToken', token);
         await AsyncStorage.setItem('userId', String(userId));
 
+        try {
+          await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          await AsyncStorage.setItem('profileExists', 'true');
+        } catch (profileError) {
+          if (profileError.response && profileError.response.status === 404) {
+            await AsyncStorage.setItem('profileExists', 'false');
+          } else {
+            console.error('Error al verificar el perfil:', profileError);
+            Alert.alert('Error', 'No se pudo verificar tu perfil. Inténtalo de nuevo.');
+            return; // Stop execution if profile check fails for other reasons
+          }
+        }
+
         Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
         router.replace('/');
+
       } else {
         Alert.alert('Error de Inicio de Sesión', 'La respuesta de la API no contiene el token o el ID de usuario.');
       }
@@ -68,13 +84,10 @@ const LoginScreen = () => {
       let errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
       if (error.response) {
-        // El servidor respondió con un error (ej: 401, 404, 500)
         errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'Credenciales incorrectas.'}`;
       } else if (error.request) {
-        // La petición se hizo pero no se recibió respuesta
         errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
       } else {
-        // Otro tipo de error
         errorMessage = `Error: ${error.message}`;
       }
       

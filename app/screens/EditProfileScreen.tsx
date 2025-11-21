@@ -12,6 +12,7 @@ const EditProfileScreen = () => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -28,9 +29,29 @@ const EditProfileScreen = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProfileData(response.data);
+        setIsCreating(false);
+
       } catch (err) {
-        setError('Failed to load profile data.');
-        console.error(err);
+        if (err.response && err.response.status === 404) {
+          // Profile doesn't exist, initialize for creation
+          setIsCreating(true);
+          const userId = await AsyncStorage.getItem('userId');
+          setProfileData({
+            nombreCompleto: '',
+            telefono: '',
+            documentoIdentidad: '',
+            fechaNacimiento: new Date().toISOString(),
+            genero: '',
+            biografia: '',
+            ciudad: '',
+            pais: '',
+            fotoPerfil: '',
+            usuario: { id: parseInt(userId, 10) }
+          });
+        } else {
+          setError('Failed to load profile data.');
+          console.error(err);
+        }
       } finally {
         setLoading(false);
       }
@@ -39,21 +60,32 @@ const EditProfileScreen = () => {
     fetchProfileData();
   }, []);
 
-  const handleUpdate = async () => {
+  const handleSave = async () => {
     try {
         const token = await AsyncStorage.getItem('userToken');
-        if (!token || !profileData?.id) return;
+        if (!token) return;
 
-        await axios.put(`https://apiautentificacion.onrender.com/api/perfiles/${profileData.id}`,
-            profileData,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        if (isCreating) {
+            // Create new profile
+            await axios.post(`https://apiautentificacion.onrender.com/api/perfiles`,
+                profileData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } else {
+            // Update existing profile
+            await axios.put(`https://apiautentificacion.onrender.com/api/perfiles/${profileData.id}`,
+                profileData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        }
 
-        Alert.alert('Éxito', 'Perfil actualizado correctamente.');
+        await AsyncStorage.setItem('profileExists', 'true');
+        Alert.alert('Éxito', 'Perfil guardado correctamente.');
         router.replace('/');
+
     } catch (err) {
-        Alert.alert('Error', 'No se pudo actualizar el perfil.');
-        console.error("Update error:", err);
+        Alert.alert('Error', 'No se pudo guardar el perfil.');
+        console.error("Save error:", err);
     }
 };
 
@@ -77,7 +109,7 @@ const EditProfileScreen = () => {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Feather name="chevron-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Editar Perfil</Text>
+          <Text style={styles.headerTitle}>{isCreating ? 'Crear Perfil' : 'Editar Perfil'}</Text>
         </View>
         
         <View style={styles.form}>
@@ -113,7 +145,7 @@ const EditProfileScreen = () => {
             <Text style={styles.label}>URL Foto de Perfil</Text>
             <TextInput style={styles.input} value={profileData.fotoPerfil} onChangeText={text => handleInputChange('fotoPerfil', text)} placeholder="URL de la imagen" placeholderTextColor="#8a8d97" />
 
-            <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                 <Text style={styles.saveButtonText}>Guardar Cambios</Text>
             </TouchableOpacity>
         </View>
