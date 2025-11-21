@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
@@ -63,7 +63,7 @@ const LoginScreen = () => {
           });
           await AsyncStorage.setItem('profileExists', 'true');
         } catch (profileError) {
-          if (profileError.response && profileError.response.status === 404) {
+          if (isAxiosError(profileError) && profileError.response && profileError.response.status === 404) {
             await AsyncStorage.setItem('profileExists', 'false');
           } else {
             console.error('Error al verificar el perfil:', profileError);
@@ -83,11 +83,15 @@ const LoginScreen = () => {
 
       let errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
-      if (error.response) {
-        errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'Credenciales incorrectas.'}`;
-      } else if (error.request) {
-        errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
-      } else {
+      if (isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'Credenciales incorrectas.'}`;
+        } else if (error.request) {
+          errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      } else if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
       

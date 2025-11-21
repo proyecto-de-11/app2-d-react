@@ -47,7 +47,7 @@ const CreateAccountScreen = () => {
     try {
       const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/register', {
         email,
-        contrasena: password, // The API expects 'contrasena'
+        password, // The API expects 'password'
         idRol: 2, // Default value
         estaActivo: true, // Default value
       });
