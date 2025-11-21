@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/app/URL";
 import { ProfileBasic } from "@/types/ProfileBasic";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 
@@ -7,8 +8,9 @@ export async function obtenerPerfilesPublicos(): Promise<ProfileBasic[]> {
   const urlCompleta: string = `${API_BASE_URL}/api/perfiles/publicos`;
 
   try {
+    const token = await AsyncStorage.getItem('userToken');
     // Axios realiza la solicitud GET
-    const response = await axios.get<ProfileBasic[]>(urlCompleta);
+    const response = await axios.get<ProfileBasic[]>(urlCompleta,{headers: { Authorization: `Bearer ${token}` },});
     console.log("Perfiles obtenidos:", response.data);
 
     // Retorna los datos que se encuentran en la propiedad 'data' de la respuesta

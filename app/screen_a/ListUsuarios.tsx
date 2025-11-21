@@ -1,9 +1,10 @@
 import { obtenerPerfilesPublicos } from '@/services/Profile.service';
+import { ProfileBasic } from '@/types/ProfileBasic';
 import { useEffect, useState } from 'react';
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TextInput } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Image, TextInput, ActivityIndicator } from 'react-native';
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const users = [
   { id: '1', name: 'Ivanr', avatar: 'https://images.unsplash.com/photo-1762324858945-3fd82fe78bcd?q=80&w=770&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
@@ -16,6 +17,7 @@ const users = [
 const ListUsuarios = () => {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
+  const [profile, setProfile] = useState<ProfileBasic[]>([]);
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -23,17 +25,27 @@ const ListUsuarios = () => {
 
   useEffect(() => {
     async function fetchData() { 
-      obtenerPerfilesPublicos();
+      setProfile(await obtenerPerfilesPublicos());
      }
 
     fetchData()
   }, []);
+  if (profile.length === 0) {
+    return (
+      <SafeAreaProvider>
+    <SafeAreaView style={[styles.container1, styles.horizontal]}>
+      <ActivityIndicator size="large" color="#00ff00" />
+    </SafeAreaView>
+  </SafeAreaProvider>
+    )
+
+  }
 
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+      <Image source={{ uri: item.fotoPerfi}} style={styles.avatar} />
       <View style={styles.textContainer}>
-        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.name}>{item.nombreCompleto}</Text>
       </View>
      
     </View>
@@ -57,9 +69,9 @@ const ListUsuarios = () => {
         value={searchQuery}
       />
       <FlatList
-        data={filteredUsers}
+        data={profile}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.usuarioId.toString()}
       />
     </View>
 
@@ -76,6 +88,15 @@ const styles = StyleSheet.create({
     margin: 10,
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
+  },
+  container1: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  horizontal: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 10,
   },
   itemContainer: {
     flexDirection: 'row',
