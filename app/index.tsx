@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons'; // Added Feather here
-import { Search } from 'lucide-react-native';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
@@ -13,6 +12,7 @@ const HomeScreen = () => {
   const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -40,11 +40,45 @@ const HomeScreen = () => {
     fetchUserData();
   }, []);
 
-  // Safer way to get the first name
+  const handleLogout = async () => {
+    setMenuVisible(false);
+    await AsyncStorage.clear();
+    router.replace('/screens/LoginScreen');
+  };
+
+  const navigateToProfile = () => {
+    setMenuVisible(false);
+    router.push('/screens/ProfileScreen');
+  };
+  
   const firstName = userData?.nombreCompleto ? userData.nombreCompleto.split(' ')[0] : '';
 
   return (
     <SafeAreaView style={styles.safeArea}>
+
+      <Modal
+        transparent={true}
+        visible={menuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+        animationType="fade"
+      >
+        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.menuContainer}>
+              <TouchableOpacity style={styles.menuOption} onPress={navigateToProfile}>
+                <Feather name="user" size={20} color="#333" />
+                <Text style={styles.menuText}>Ver mi perfil</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity style={styles.menuOption} onPress={handleLogout}>
+                <Feather name="log-out" size={20} color="#c0392b" />
+                <Text style={[styles.menuText, { color: '#c0392b' }]}>Cerrar Sesión</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       <ScrollView>
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -55,7 +89,7 @@ const HomeScreen = () => {
                 <Text style={styles.welcomeText}>¡Hola, {firstName}!</Text>
               )}
             </View>
-            <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/screens/ProfileScreen')}>
+            <TouchableOpacity style={styles.profileButton} onPress={() => setMenuVisible(true)}>
               {loading || !userData?.fotoPerfil ? (
                  <View style={styles.profileIconPlaceholder}><Feather name="user" size={30} color="#4A90E2" /></View>
               ) : (
@@ -119,17 +153,13 @@ const HomeScreen = () => {
           <Ionicons name="home" size={24} color={Colors.light.tint} />
           <Text style={[styles.navText, { color: Colors.light.tint }]}>Inicio</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screen_a/ListUsuarios')}>
+        <TouchableOpacity style={styles.navItem}>
           <Ionicons name="search" size={24} color="#888" />
           <Text style={styles.navText}>Buscar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="chatbubble-ellipses-outline" size={24} color="#888" />
           <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/ProfileScreen')}>
-          <Ionicons name="person-outline" size={24} color="#888" />
-          <Text style={styles.navText}>Perfil</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -148,6 +178,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    zIndex: 10,
   },
   headerTop: {
     flexDirection: 'row',
@@ -272,7 +303,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: '#E8E8E8',
-    zIndex: 100,
   },
   navItem: {
     alignItems: 'center',
@@ -282,6 +312,40 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 2,
   },
+  // Menu styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  menuContainer: {
+    position: 'absolute',
+    top: 80, 
+    right: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 10,
+  },
+  menuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  menuText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#333',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 5,
+  }
 });
 
 export default HomeScreen;
