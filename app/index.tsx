@@ -153,7 +153,7 @@ const HomeScreen = () => {
           <Ionicons name="home" size={24} color={Colors.light.tint} />
           <Text style={[styles.navText, { color: Colors.light.tint }]}>Inicio</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('./screen_a/ListUsuarios')} >
           <Ionicons name="search" size={24} color="#888" />
           <Text style={styles.navText}>Buscar</Text>
         </TouchableOpacity>
