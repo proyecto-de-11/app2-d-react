@@ -4,12 +4,28 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Activi
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Define la interfaz para los datos del perfil
+interface ProfileData {
+  id?: number;
+  nombreCompleto: string;
+  telefono: string;
+  documentoIdentidad: string;
+  fechaNacimiento: string;
+  genero: string;
+  biografia: string;
+  ciudad: string;
+  pais: string;
+  fotoPerfil: string;
+  usuario: { id: number };
+}
 
 const EditProfileScreen = () => {
   const router = useRouter();
-  const [profileData, setProfileData] = useState(null);
+  // Especifica el tipo para el estado profileData
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -21,7 +37,7 @@ const EditProfileScreen = () => {
         const token = await AsyncStorage.getItem('userToken');
 
         if (!userId || !token) {
-          router.replace('/screens/LoginScreen');
+          router.replace('/login');
           return;
         }
 
@@ -32,22 +48,24 @@ const EditProfileScreen = () => {
         setIsCreating(false);
 
       } catch (err) {
-        if (err.response && err.response.status === 404) {
-          // Profile doesn't exist, initialize for creation
+        const error = err as AxiosError;
+        if (error.response && error.response.status === 404) {
           setIsCreating(true);
           const userId = await AsyncStorage.getItem('userId');
-          setProfileData({
-            nombreCompleto: '',
-            telefono: '',
-            documentoIdentidad: '',
-            fechaNacimiento: new Date().toISOString(),
-            genero: '',
-            biografia: '',
-            ciudad: '',
-            pais: '',
-            fotoPerfil: '',
-            usuario: { id: parseInt(userId, 10) }
-          });
+          if (userId) {
+            setProfileData({
+              nombreCompleto: '',
+              telefono: '',
+              documentoIdentidad: '',
+              fechaNacimiento: new Date().toISOString(),
+              genero: '',
+              biografia: '',
+              ciudad: '',
+              pais: '',
+              fotoPerfil: '',
+              usuario: { id: parseInt(userId, 10) }
+            });
+          }
         } else {
           setError('Failed to load profile data.');
           console.error(err);
@@ -61,18 +79,18 @@ const EditProfileScreen = () => {
   }, []);
 
   const handleSave = async () => {
+    if (!profileData) return;
+
     try {
         const token = await AsyncStorage.getItem('userToken');
         if (!token) return;
 
         if (isCreating) {
-            // Create new profile
             await axios.post(`https://apiautentificacion.onrender.com/api/perfiles`,
                 profileData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         } else {
-            // Update existing profile
             await axios.put(`https://apiautentificacion.onrender.com/api/perfiles/${profileData.id}`,
                 profileData,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -89,12 +107,12 @@ const EditProfileScreen = () => {
     }
 };
 
-
-  const handleInputChange = (field, value) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
+  // Define los tipos para los parámetros de la función
+  const handleInputChange = (field: keyof ProfileData, value: string) => {
+    setProfileData(prev => prev ? ({ ...prev, [field]: value }) : null);
   };
 
-  if (loading) {
+  if (loading || !profileData) {
     return <LinearGradient colors={['#1c1e2a', '#2a2d3e']} style={styles.center}><ActivityIndicator size="large" color="#fff" /></LinearGradient>;
   }
 
@@ -114,7 +132,7 @@ const EditProfileScreen = () => {
         
         <View style={styles.form}>
             <Image source={{ uri: profileData.fotoPerfil || 'https://via.placeholder.com/150' }} style={styles.avatar} />
-            <TouchableOpacity onPress={() => { /* Handle image picking */ }}>
+            <TouchableOpacity onPress={() => { /* Lógica para seleccionar imagen */ }}>
                  <Text style={styles.changeAvatarText}>Cambiar Foto</Text>
             </TouchableOpacity>
 

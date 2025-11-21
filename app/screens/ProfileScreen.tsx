@@ -7,8 +7,32 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
+// Define la interfaz para los datos del perfil del usuario
+interface UserProfile {
+  fotoPerfil: string;
+  nombreCompleto: string;
+  usuario: {
+    email: string;
+  };
+  biografia: string;
+  documentoIdentidad: string;
+  fechaNacimiento: string;
+  genero: string;
+  telefono: string;
+  ciudad: string;
+  pais: string;
+}
+
+// Define la interfaz para las props de InfoRow
+interface InfoRowProps {
+  icon: React.ComponentProps<typeof Feather>['name'];
+  label: string;
+  value: string;
+}
+
 const ProfileScreen = () => {
-  const [userData, setUserData] = useState(null);
+  // Especifica el tipo para el estado userData
+  const [userData, setUserData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -54,7 +78,8 @@ const ProfileScreen = () => {
     );
   }
   
-  const InfoRow = ({ icon, label, value }) => (
+  // Especifica el tipo de las props para InfoRow
+  const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value }) => (
     <>
       <View style={styles.infoRow}>
         <Feather name={icon} size={20} color="#8a8d97" style={styles.infoIcon} />

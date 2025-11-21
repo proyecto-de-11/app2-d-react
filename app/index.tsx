@@ -6,11 +6,18 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+
+// Define la interfaz para los datos del usuario
+interface UserData {
+  nombreCompleto: string;
+  fotoPerfil: string;
+}
 
 const HomeScreen = () => {
   const router = useRouter();
-  const [userData, setUserData] = useState(null);
+  // Especifica el tipo para el estado userData
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuVisible, setMenuVisible] = useState(false);
   const [isProfileModalVisible, setProfileModalVisible] = useState(false);
@@ -29,7 +36,9 @@ const HomeScreen = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserData(response.data);
-    } catch (error) {
+    } catch (err) {
+      // Especifica el tipo del error
+      const error = err as AxiosError;
       if (error.response && error.response.status !== 404) {
           console.error("Failed to fetch user data for home screen:", error);
           await AsyncStorage.clear();
