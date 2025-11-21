@@ -13,6 +13,7 @@ export default function RootLayout() {
       <Stack.Screen name="screen_a/ListUsuarios" options={{headerShown:false }} />
       <Stack.Screen name="screens/ProfileScreen" options={{headerShown:false }} />
       <Stack.Screen name="screens/EditProfileScreen" options={{headerShown:false }} />
+      <Stack.Screen name="screens/CreateAccountScreen" options={{headerShown:false }} />
     </Stack>
   );
 }

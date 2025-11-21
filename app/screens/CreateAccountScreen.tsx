@@ -17,11 +17,12 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const LoginScreen = () => {
+const CreateAccountScreen = () => {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const router = useRouter();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -44,54 +45,36 @@ const LoginScreen = () => {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  const handleLogin = async () => {
+  const handleCreateAccount = async () => {
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Las contraseñas no coinciden.');
+      return;
+    }
+
     try {
-      const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/login', {
+      const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/register', {
+        username,
         email,
         password,
       });
 
-      if (response.data.token && response.data.userId) {
-        const { token, userId } = response.data;
-        
-        await AsyncStorage.setItem('userToken', token);
-        await AsyncStorage.setItem('userId', String(userId));
+      Alert.alert('Cuenta Creada', 'Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.');
+      router.replace('/login');
 
-        try {
-          await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          await AsyncStorage.setItem('profileExists', 'true');
-        } catch (profileError) {
-          if (profileError.response && profileError.response.status === 404) {
-            await AsyncStorage.setItem('profileExists', 'false');
-          } else {
-            console.error('Error al verificar el perfil:', profileError);
-            Alert.alert('Error', 'No se pudo verificar tu perfil. Inténtalo de nuevo.');
-            return; // Stop execution if profile check fails for other reasons
-          }
-        }
-
-        Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
-        router.replace('/');
-
-      } else {
-        Alert.alert('Error de Inicio de Sesión', 'La respuesta de la API no contiene el token o el ID de usuario.');
-      }
     } catch (error) {
-      console.error('Error de inicio de sesión:', JSON.stringify(error, null, 2));
+      console.error('Error al crear la cuenta:', JSON.stringify(error, null, 2));
 
       let errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
       if (error.response) {
-        errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'Credenciales incorrectas.'}`;
+        errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear la cuenta.'}`;
       } else if (error.request) {
         errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
       } else {
         errorMessage = `Error: ${error.message}`;
       }
       
-      Alert.alert('Error de Inicio de Sesión', errorMessage);
+      Alert.alert('Error al Crear Cuenta', errorMessage);
     }
   };
 
@@ -107,11 +90,23 @@ const LoginScreen = () => {
         <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.headerContainer}>
             <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
-            <Text style={styles.title}>Bienvenido</Text>
-            <Text style={styles.subtitle}>Inicia sesión para una experiencia increíble</Text>
+            <Text style={styles.title}>Crear Cuenta</Text>
+            <Text style={styles.subtitle}>Únete a nuestra comunidad</Text>
           </View>
 
           <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
+              <Feather name="user" size={20} color="#8a8d97" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Nombre de Usuario"
+                placeholderTextColor="#8a8d97"
+                autoCapitalize="none"
+                value={username}
+                onChangeText={setUsername}
+              />
+            </View>
+
             <View style={styles.inputContainer}>
               <Feather name="mail" size={20} color="#8a8d97" style={styles.inputIcon} />
               <TextInput
@@ -137,25 +132,37 @@ const LoginScreen = () => {
               />
             </View>
 
+            <View style={styles.inputContainer}>
+              <Feather name="lock" size={20} color="#8a8d97" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirmar Contraseña"
+                placeholderTextColor="#8a8d97"
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+            </View>
+
             <TouchableOpacity
               style={styles.button}
-              onPress={handleLogin}
-              disabled={!(email && password)}
+              onPress={handleCreateAccount}
+              disabled={!(username && email && password && confirmPassword)}
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={!(email && password) ? ['#4a4e69', '#3a3d51'] : ['#8e44ad', '#c0392b']}
+                colors={!(username && email && password && confirmPassword) ? ['#4a4e69', '#3a3d51'] : ['#8e44ad', '#c0392b']}
                 style={styles.buttonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                <Text style={styles.buttonText}>Crear Cuenta</Text>
               </LinearGradient>
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <TouchableOpacity onPress={() => router.push('/screens/CreateAccountScreen')}>
-                <Text style={styles.footerText}>¿No tienes una cuenta? <Text style={styles.signUpText}>Regístrate</Text></Text>
+              <TouchableOpacity onPress={() => router.replace('/login')}>
+                <Text style={styles.footerText}>¿Ya tienes una cuenta? <Text style={styles.signUpText}>Inicia Sesión</Text></Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -263,4 +270,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default CreateAccountScreen;
