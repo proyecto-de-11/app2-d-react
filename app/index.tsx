@@ -77,7 +77,7 @@ const HomeScreen = () => {
 
   const navigateToCreateProfile = () => {
     setProfileModalVisible(false);
-    router.push('/screens/EditProfileScreen');
+    router.push('/screens/CreateProfileScreen');
   };
 
   const firstName = userData?.nombreCompleto ? userData.nombreCompleto.split(' ')[0] : 'Usuario';
@@ -205,6 +205,10 @@ const HomeScreen = () => {
         <TouchableOpacity style={styles.navItem} onPress={() => router.push('./screen_a/ListUsuarios')} >
           <Ionicons name="search" size={24} color="#888" />
           <Text style={styles.navText}>Buscar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/CreateProfileScreen')}>
+          <Ionicons name="person-add-outline" size={24} color="#888" />
+          <Text style={styles.navText}>Crear Perfil</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="chatbubble-ellipses-outline" size={24} color="#888" />
