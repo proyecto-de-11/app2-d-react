@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { obtenerPerfilesPublicos } from '@/services/Profile.service';
+import { useEffect, useState } from 'react';
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TextInput } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const users = [
@@ -20,15 +21,25 @@ const ListUsuarios = () => {
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  useEffect(() => {
+    async function fetchData() { 
+      obtenerPerfilesPublicos();
+     }
+
+    fetchData()
+  }, []);
+
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
       <Image source={{ uri: item.avatar }} style={styles.avatar} />
       <View style={styles.textContainer}>
         <Text style={styles.name}>{item.name}</Text>
       </View>
-      <FontAwesome name="paper-plane" size={24} color="black" />
+     
     </View>
   );
+
+
 
   return (
     <View style={{
