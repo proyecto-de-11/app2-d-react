@@ -19,7 +19,7 @@ const ProfileScreen = () => {
         const token = await AsyncStorage.getItem('userToken');
 
         if (!userId || !token) {
-          router.replace('/screens/LoginScreen');
+          router.replace('/login');
           return;
         }
         
@@ -29,20 +29,14 @@ const ProfileScreen = () => {
         setUserData(response.data);
       } catch (error) {
         console.error("Failed to fetch user data:", error);
-        Alert.alert("Error", "No se pudieron cargar los datos del perfil. Intenta iniciar sesión de nuevo.");
-        handleLogout();
+        await AsyncStorage.clear();
+        router.replace('/login');
       } finally {
         setLoading(false);
       }
     };
     fetchUserData();
   }, []);
-
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem('userToken');
-    await AsyncStorage.removeItem('userId');
-    router.replace('/screens/LoginScreen');
-  };
 
   if (loading) {
     return (
@@ -74,7 +68,6 @@ const ProfileScreen = () => {
   return (
     <LinearGradient colors={['#1c1e2a', '#2a2d3e']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Main Profile Card */}
         <View style={styles.card}>
           <Image 
             source={{ uri: userData.fotoPerfil || 'https://via.placeholder.com/150' }} 
@@ -85,7 +78,6 @@ const ProfileScreen = () => {
           <Text style={styles.biography}>{userData.biografia}</Text>
         </View>
 
-        {/* Details Card */}
         <View style={styles.card}>
           <InfoRow icon="shield" label="Documento" value={userData.documentoIdentidad} />
           <InfoRow icon="gift" label="Nacimiento" value={new Date(userData.fechaNacimiento).toLocaleDateString('es-ES')} />
@@ -94,7 +86,6 @@ const ProfileScreen = () => {
           <InfoRow icon="map-pin" label="Ubicación" value={`${userData.ciudad}, ${userData.pais}`} />
         </View>
 
-        {/* Actions Card */}
         <View style={styles.card}>
            <TouchableOpacity style={styles.actionRow} onPress={() => router.push('/screens/EditProfileScreen')}>
             <Feather name="edit" size={20} color="#8a8d97" style={styles.actionIcon} />
@@ -102,9 +93,10 @@ const ProfileScreen = () => {
             <Feather name="chevron-right" size={20} color="#8a8d97" />
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.actionRow} onPress={handleLogout}>
-            <Feather name="log-out" size={20} color="#c0392b" style={styles.actionIcon} />
-            <Text style={[styles.actionText, styles.logoutText]}>Cerrar Sesión</Text>
+          <TouchableOpacity style={styles.actionRow} onPress={() => router.replace('/')}>
+            <Feather name="home" size={20} color="#8a8d97" style={styles.actionIcon} />
+            <Text style={styles.actionText}>Regresar al inicio</Text>
+            <Feather name="chevron-right" size={20} color="#8a8d97" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -136,7 +128,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 10,
   },
-  // Profile Card Styles
   avatar: {
     width: 120,
     height: 120,
@@ -165,7 +156,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  // Details Card Styles
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -188,7 +178,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#3a3d51',
   },
-  // Actions Card Styles
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -21,7 +21,7 @@ const HomeScreen = () => {
       const token = await AsyncStorage.getItem('userToken');
 
       if (!userId || !token) {
-        router.replace('/screens/LoginScreen');
+        router.replace('/login');
         return;
       }
 
@@ -33,7 +33,7 @@ const HomeScreen = () => {
       if (error.response && error.response.status !== 404) {
           console.error("Failed to fetch user data for home screen:", error);
           await AsyncStorage.clear();
-          router.replace('/screens/LoginScreen');
+          router.replace('/login');
       }
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ const HomeScreen = () => {
   const handleLogout = async () => {
     setMenuVisible(false);
     await AsyncStorage.clear();
-    router.replace('/screens/LoginScreen');
+    router.replace('/login');
   };
 
   const navigateToProfile = () => {
