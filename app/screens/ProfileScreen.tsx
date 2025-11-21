@@ -96,7 +96,7 @@ const ProfileScreen = () => {
 
         {/* Actions Card */}
         <View style={styles.card}>
-           <TouchableOpacity style={styles.actionRow}>
+           <TouchableOpacity style={styles.actionRow} onPress={() => router.push('/screens/EditProfileScreen')}>
             <Feather name="edit" size={20} color="#8a8d97" style={styles.actionIcon} />
             <Text style={styles.actionText}>Editar Perfil</Text>
             <Feather name="chevron-right" size={20} color="#8a8d97" />
