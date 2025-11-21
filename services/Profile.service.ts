@@ -11,7 +11,7 @@ export async function obtenerPerfilesPublicos(): Promise<ProfileBasic[]> {
     const token = await AsyncStorage.getItem('userToken');
     // Axios realiza la solicitud GET
     const response = await axios.get<ProfileBasic[]>(urlCompleta,{headers: { Authorization: `Bearer ${token}` },});
-    console.log("Perfiles obtenidos:", response.data);
+
 
     // Retorna los datos que se encuentran en la propiedad 'data' de la respuesta
     return response.data;

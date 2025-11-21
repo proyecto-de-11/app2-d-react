@@ -43,7 +43,7 @@ const ListUsuarios = () => {
 
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
-      <Image source={{ uri: item.fotoPerfi}} style={styles.avatar} />
+      <Image source={{ uri: item.fotoPerfil || 'https://www.istockphoto.com/photo/black-woman-winner-and-home-success-with-results-or-good-news-for-online-giveaway-or-gm2149111354-570337412'}} style={styles.avatar} />
       <View style={styles.textContainer}>
         <Text style={styles.name}>{item.nombreCompleto}</Text>
       </View>
