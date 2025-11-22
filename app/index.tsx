@@ -206,10 +206,6 @@ const HomeScreen = () => {
           <Ionicons name="search" size={24} color="#888" />
           <Text style={styles.navText}>Buscar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/screens/CreateProfileScreen')}>
-          <Ionicons name="person-add-outline" size={24} color="#888" />
-          <Text style={styles.navText}>Crear Perfil</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="chatbubble-ellipses-outline" size={24} color="#888" />
           <Text style={styles.navText}>Chat</Text>
