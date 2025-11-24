@@ -3,16 +3,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Send, X } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { messagingService } from '../../services/messagingService';
 import { socketService } from '../../services/socketService';
@@ -127,13 +127,34 @@ export default function ChatScreen() {
     socketService.connect(userId);
 
     socketService.onNewMessage((nuevoMensaje: Mensaje) => {
-      setMessages((prev) => [...prev, nuevoMensaje]);
-      setTimeout(() => scrollToBottom(), 100);
+      console.log('📨 Nuevo mensaje recibido:', nuevoMensaje);
+      
+      // Solo agregar el mensaje si NO es del usuario actual
+      // (ya lo agregamos localmente cuando lo enviamos)
+      if (nuevoMensaje.usuarioId !== userId) {
+        setMessages((prev) => [...prev, nuevoMensaje]);
+        setTimeout(() => scrollToBottom(), 100);
+      } else {
+        console.log('🚫 Ignorando mensaje propio desde WebSocket (ya está en la lista)');
+      }
     });
 
-    socketService.onUserTyping((data) => {
-      if (data.chatId === currentChatId) {
+    socketService.onUserTyping((data: any) => {
+      console.log('⌨️ Evento userTyping recibido:', data);
+      console.log('otherUserId:', otherUserId);
+      console.log('data.usuarioId:', data.usuarioId);
+      console.log('data.isTyping:', data.isTyping);
+      
+      // El servidor envía usuarioId, no chatId
+      const typingUserId = typeof data.usuarioId === 'string' 
+        ? parseInt(data.usuarioId) 
+        : data.usuarioId;
+      
+      if (typingUserId === otherUserId) {
+        console.log('✅ UsuarioId coincide, actualizando estado de typing');
         setIsOtherUserTyping(data.isTyping);
+      } else {
+        console.log('❌ UsuarioId NO coincide');
       }
     });
   };
@@ -197,6 +218,7 @@ export default function ChatScreen() {
 
     // Enviar evento de "escribiendo" cuando el usuario escribe
     if (currentChatId && text.length > 0) {
+      console.log('📝 Enviando evento typing: true, chatId:', currentChatId);
       socketService.sendTyping(currentChatId, true);
 
       // Cancelar el timeout anterior si existe
@@ -206,9 +228,11 @@ export default function ChatScreen() {
 
       // Después de 2 segundos sin escribir, enviar isTyping: false
       typingTimeoutRef.current = setTimeout(() => {
+        console.log('⏱️ Timeout: Enviando evento typing: false');
         socketService.sendTyping(currentChatId, false);
       }, 2000);
     } else if (currentChatId) {
+      console.log('🛑 Enviando evento typing: false (input vacío)');
       socketService.sendTyping(currentChatId, false);
     }
   };
@@ -376,5 +400,35 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  typingBubbleContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'flex-start',
+  },
+  typingBubble: {
+    backgroundColor: '#e4e6eb',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomLeftRadius: 4,
+  },
+  typingText: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 6,
+  },
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#666',
+    marginHorizontal: 2,
   },
 });

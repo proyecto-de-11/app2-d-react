@@ -206,7 +206,7 @@ const HomeScreen = () => {
           <Ionicons name="search" size={24} color="#888" />
           <Text style={styles.navText}>Buscar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('./screens/MyChatsScreen')}>
           <Ionicons name="chatbubble-ellipses-outline" size={24} color="#888" />
           <Text style={styles.navText}>Chat</Text>
         </TouchableOpacity>

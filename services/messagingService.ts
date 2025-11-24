@@ -1,12 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {
-    CreateChatResponse,
-    GetChatsResponse,
-    GetMessagesResponse,
-    Usuario,
-    VerifyChatResponse,
+  CreateChatResponse,
+  GetChatsResponse,
+  GetMessagesResponse,
+  Usuario,
+  VerifyChatResponse,
 } from '../types/messaging-types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MESSAGING_API = 'https://apimensajeria.onrender.com/api';
 const AUTH_API = 'https://apiautentificacion.onrender.com/api';
@@ -30,10 +30,21 @@ export const messagingService = {
   // Obtener perfil de un usuario específico
   async getPublicProfile(usuarioId: number): Promise<Usuario> {
     try {
-      const response = await axios.get(`${AUTH_API}/perfiles/publicos/${usuarioId}`);
+      const userId = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('userToken');
+      console.log(`📡 Petición getPublicProfile para usuarioId: ${usuarioId}, token: ${token ? 'existe' : 'NO existe'}`);
+      
+      const response = await axios.get(`${AUTH_API}/perfiles/publicos/${usuarioId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      console.log(`✅ Perfil recibido para usuarioId ${usuarioId}:`, response.data);
       return response.data;
-    } catch (error) {
-      console.error('Error al obtener perfil:', error);
+    } catch (error: any) {
+      console.error(`❌ Error en getPublicProfile para usuarioId ${usuarioId}:`);
+      console.error('   Status:', error.response?.status);
+      console.error('   Message:', error.response?.data?.message || error.message);
+      console.error('   Full error:', error.response?.data);
       throw error;
     }
   },
@@ -68,8 +79,10 @@ export const messagingService = {
 
   // Obtener chats del usuario
   async getUserChats(userId: number): Promise<GetChatsResponse> {
+    console.log('usario nnumero :',userId)
     try {
       const response = await axios.get(`${MESSAGING_API}/chats/usuario/${userId}`);
+      console.log('Chats del usuario:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error al obtener chats del usuario:', error);

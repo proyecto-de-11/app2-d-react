@@ -45,15 +45,23 @@ export default function MyChatsScreen() {
 
     try {
       setLoading(true);
+      
       const response = await messagingService.getUserChats(userId);
+      console.log(response.chats.length);
 
       // Obtener datos de cada participante
-      const chatsWithUserData: (ChatWithUserData | null)[] = await Promise.all(
-        response.chats.map(async (chat) => {
+      const chatsWithUserData: ChatWithUserData[] = await Promise.all(
+        response.chats.map(async (chat, index) => {
+  
           try {
+            console.log(`🔍 Cargando perfil ${index + 1}/${response.chats.length} - usuarioId: ${chat.otherParticipant.usuarioId}`);
+            
             const userProfile = await messagingService.getPublicProfile(
               chat.otherParticipant.usuarioId
             );
+
+            console.log(`✅ Perfil ${index + 1} cargado:`, userProfile);
+            
             return {
               chatId: chat.chatId,
               usuarioId: userProfile.usuarioId,
@@ -61,16 +69,26 @@ export default function MyChatsScreen() {
               fotoPerfil: userProfile.fotoPerfil,
               biografia: userProfile.biografia,
             };
-          } catch (error) {
-            console.error('Error al obtener perfil del usuario:', error);
-            return null;
+          } catch (error: any) {
+            console.error(`❌ Error al obtener perfil ${index + 1} del usuario ${chat.otherParticipant.usuarioId}:`, error);
+            
+            // Si falla, usar datos por defecto
+            console.warn(`⚠️ Usando datos por defecto para usuario ${chat.otherParticipant.usuarioId}`);
+            return {
+              chatId: chat.chatId,
+              usuarioId: chat.otherParticipant.usuarioId,
+              nombreCompleto: `Usuario ${chat.otherParticipant.usuarioId}`,
+              fotoPerfil: 'https://via.placeholder.com/100',
+              biografia: 'Sin biografía',
+            };
           }
         })
       );
 
-      // Filtrar chats que no pudieron cargar usando type guard
-      const validChats = chatsWithUserData.filter((chat): chat is ChatWithUserData => chat !== null);
-      setChats(validChats);
+      console.log(`📊 Total chats recibidos: ${response.chats.length}`);
+      console.log(`📊 Chats mostrados: ${chatsWithUserData.length}`);
+      console.log('✅ Chats con datos:', chatsWithUserData);
+      setChats(chatsWithUserData);
     } catch (error) {
       console.error('Error al cargar chats:', error);
     } finally {

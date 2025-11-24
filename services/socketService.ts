@@ -80,6 +80,7 @@ class SocketService {
       return;
     }
 
+    console.log('📤 Emitiendo evento typing:', { chatId, isTyping });
     this.socket.emit('typing', {
       chatId,
       isTyping,
@@ -93,7 +94,11 @@ class SocketService {
       return;
     }
 
-    this.socket.on('userTyping', callback);
+    console.log('🎧 Registrando listener para evento userTyping');
+    this.socket.on('userTyping', (data) => {
+      console.log('🔔 Socket recibió evento userTyping:', data);
+      callback(data);
+    });
   }
 
   // Remover listener de "escribiendo"
