@@ -45,14 +45,16 @@ const CreateAccountScreen = () => {
 
   const handleCreateAccount = async () => {
     try {
-      const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/register', {
+      // ¡¡¡CORRECCIÓN FINAL Y ABSOLUTA!!!
+      // La URL correcta es /registrar, no /register
+      const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/registrar', {
         email,
-        password, // The API expects 'password'
-        idRol: 2, // Default value
-        estaActivo: true, // Default value
+        contrasena: password,
+        idRol: 2,
+        estaActivo: true,
       });
 
-      Alert.alert('Cuenta Creada', 'Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.');
+      Alert.alert('¡Cuenta Creada!', 'Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.');
       router.replace('/login');
 
     } catch (error) {

@@ -20,7 +20,7 @@ import { Feather } from '@expo/vector-icons';
 import axios, { isAxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Versión final con textos en español.
+// Versión final. Corregido el bug que impedía hacer clic en "Regístrate".
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,8 +109,13 @@ const LoginScreen = () => {
             </SafeAreaView>
         </LinearGradient>
       
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-            <Animated.View style={[styles.formContainer, {transform: [{translateY: formAnim}]}]}>
+        {/* CORRECCIÓN: Se añade pointerEvents="box-none" para permitir clics en los elementos de detrás */}
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+            style={styles.keyboardView}
+            pointerEvents="box-none"
+        >
+            <Animated.View style={[styles.formContainer, {transform: [{translateY: formAnim}]}]} pointerEvents="auto">
                 <Text style={styles.title}>Bienvenido de Nuevo</Text>
                 <Text style={styles.subtitle}>Ingresa tus datos para continuar</Text>
 
