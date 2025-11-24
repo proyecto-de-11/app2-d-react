@@ -35,7 +35,9 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<number | null>(chatId);
   const [needsInitialMessage, setNeedsInitialMessage] = useState(false);
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const typingTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
     loadUserId();
@@ -48,7 +50,11 @@ export default function ChatScreen() {
 
     return () => {
       socketService.offNewMessage();
+      socketService.offUserTyping();
       socketService.disconnect();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
   }, [userId]);
 
@@ -124,6 +130,12 @@ export default function ChatScreen() {
       setMessages((prev) => [...prev, nuevoMensaje]);
       setTimeout(() => scrollToBottom(), 100);
     });
+
+    socketService.onUserTyping((data) => {
+      if (data.chatId === currentChatId) {
+        setIsOtherUserTyping(data.isTyping);
+      }
+    });
   };
 
   const handleSendMessage = async () => {
@@ -175,8 +187,30 @@ export default function ChatScreen() {
 
   const handleClose = () => {
     socketService.offNewMessage();
+    socketService.offUserTyping();
     socketService.disconnect();
     router.back();
+  };
+
+  const handleInputChange = (text: string) => {
+    setInputText(text);
+
+    // Enviar evento de "escribiendo" cuando el usuario escribe
+    if (currentChatId && text.length > 0) {
+      socketService.sendTyping(currentChatId, true);
+
+      // Cancelar el timeout anterior si existe
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Después de 2 segundos sin escribir, enviar isTyping: false
+      typingTimeoutRef.current = setTimeout(() => {
+        socketService.sendTyping(currentChatId, false);
+      }, 2000);
+    } else if (currentChatId) {
+      socketService.sendTyping(currentChatId, false);
+    }
   };
 
   const renderMessage = ({ item }: { item: Mensaje }) => (
@@ -186,8 +220,8 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -198,7 +232,12 @@ export default function ChatScreen() {
           source={{ uri: otherUserPhoto || 'https://via.placeholder.com/40' }}
           style={styles.headerImage}
         />
-        <Text style={styles.headerName}>{otherUserName}</Text>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.headerName}>{otherUserName}</Text>
+          {isOtherUserTyping && (
+            <Text style={styles.typingIndicator}>escribiendo...</Text>
+          )}
+        </View>
       </View>
 
       {/* Messages */}
@@ -233,7 +272,7 @@ export default function ChatScreen() {
         <TextInput
           style={styles.input}
           value={inputText}
-          onChangeText={setInputText}
+          onChangeText={handleInputChange}
           placeholder="Escribe un mensaje..."
           placeholderTextColor="#999"
           multiline
@@ -276,11 +315,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     marginRight: 12,
   },
+  headerTextContainer: {
+    flex: 1,
+  },
   headerName: {
     fontSize: 18,
     fontWeight: '600',
     color: '#000',
-    flex: 1,
+  },
+  typingIndicator: {
+    fontSize: 12,
+    color: '#0084ff',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   loadingContainer: {
     flex: 1,

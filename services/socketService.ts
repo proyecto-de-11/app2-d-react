@@ -73,6 +73,36 @@ class SocketService {
     }
   }
 
+  // Enviar evento de "escribiendo"
+  sendTyping(chatId: number, isTyping: boolean): void {
+    if (!this.socket?.connected) {
+      console.error('Socket no está conectado');
+      return;
+    }
+
+    this.socket.emit('typing', {
+      chatId,
+      isTyping,
+    });
+  }
+
+  // Escuchar evento de "escribiendo"
+  onUserTyping(callback: (data: { chatId: number; isTyping: boolean }) => void): void {
+    if (!this.socket) {
+      console.error('Socket no está inicializado');
+      return;
+    }
+
+    this.socket.on('userTyping', callback);
+  }
+
+  // Remover listener de "escribiendo"
+  offUserTyping(): void {
+    if (this.socket) {
+      this.socket.off('userTyping');
+    }
+  }
+
   // Verificar si está conectado
   isConnected(): boolean {
     return this.socket?.connected || false;
