@@ -105,7 +105,7 @@ const LoginScreen = () => {
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
-                <Animated.Text style={[styles.appName, {opacity: fadeAnim, transform: [{scale: fadeAnim}]}]}>Jobsly</Animated.Text>
+                <Animated.Text style={[styles.appName, {opacity: fadeAnim, transform: [{scale: fadeAnim}]}]}>GOFIT</Animated.Text>
             </SafeAreaView>
         </LinearGradient>
       
@@ -116,8 +116,8 @@ const LoginScreen = () => {
             pointerEvents="box-none"
         >
             <Animated.View style={[styles.formContainer, {transform: [{translateY: formAnim}]}]} pointerEvents="auto">
-                <Text style={styles.title}>Bienvenido de Nuevo</Text>
-                <Text style={styles.subtitle}>Ingresa tus datos para continuar</Text>
+                <Text style={styles.title}>         Iniciar Sesion</Text>
+                <Text style={styles.subtitle}>             Ingresa tus datos para continuar</Text>
 
                 <Text style={styles.inputLabel}>Correo Electrónico</Text>
                 <View style={styles.inputWrapper}>
@@ -153,9 +153,7 @@ const LoginScreen = () => {
                     </LinearGradient>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.forgotPasswordButton}>
-                    <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
-                </TouchableOpacity>
+               
             </Animated.View>
         </KeyboardAvoidingView>
     </View>
