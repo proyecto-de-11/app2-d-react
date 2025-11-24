@@ -6,12 +6,13 @@ import {
   TextInput, 
   Text, 
   TouchableOpacity, 
-  Image, 
   Alert,
   Animated,
   Easing,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  SafeAreaView,
+  StatusBar
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,30 +20,34 @@ import { Feather } from '@expo/vector-icons';
 import axios, { isAxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Versión final con textos en español.
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordVisible, setPasswordVisible] = useState(false);
   const router = useRouter();
 
+  const formAnim = useRef(new Animated.Value(600)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(100)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 1000,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
+    Animated.stagger(200, [
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+            }),
+            Animated.timing(formAnim, {
+                toValue: 0,
+                duration: 900,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+        ])
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  }, [fadeAnim, formAnim]);
 
   const handleLogin = async () => {
     try {
@@ -65,188 +70,220 @@ const LoginScreen = () => {
         } catch (profileError) {
           if (isAxiosError(profileError) && profileError.response && profileError.response.status === 404) {
             await AsyncStorage.setItem('profileExists', 'false');
-          } else {
-            console.error('Error al verificar el perfil:', profileError);
-            Alert.alert('Error', 'No se pudo verificar tu perfil. Inténtalo de nuevo.');
-            return; // Stop execution if profile check fails for other reasons
           }
         }
-
-        Alert.alert('Inicio de Sesión Exitoso', '¡Bienvenido!');
         router.replace('/');
-
       } else {
-        Alert.alert('Error de Inicio de Sesión', 'La respuesta de la API no contiene el token o el ID de usuario.');
+        Alert.alert('Error de Inicio de Sesión', 'Respuesta inválida del servidor.');
       }
     } catch (error) {
-      console.error('Error de inicio de sesión:', JSON.stringify(error, null, 2));
-
-      let errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
-
+      let errorMessage = 'Ocurrió un error inesperado.';
       if (isAxiosError(error)) {
         if (error.response) {
-          errorMessage = `Error del servidor (${error.response.status}): ${error.response.data.message || 'Credenciales incorrectas.'}`;
+          errorMessage = `Error (${error.response.status}): ${error.response.data.message || 'Credenciales incorrectas.'}`;
         } else if (error.request) {
-          errorMessage = 'No se pudo conectar al servidor. Revisa tu conexión a internet.';
-        } else {
-          errorMessage = `Error: ${error.message}`;
+          errorMessage = 'No se pudo conectar al servidor.';
         }
-      } else if (error instanceof Error) {
-        errorMessage = `Error: ${error.message}`;
       }
-      
       Alert.alert('Error de Inicio de Sesión', errorMessage);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <LinearGradient
-        colors={['#1c1e2a', '#2a2d3e']}
-        style={styles.background}
-      >
-        <Animated.View style={[styles.contentContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={styles.headerContainer}>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.logo} />
-            <Text style={styles.title}>Bienvenido</Text>
-            <Text style={styles.subtitle}>Inicia sesión para una experiencia increíble</Text>
-          </View>
+    <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.header}>
+            <SafeAreaView style={styles.safeAreaHeader}>
+                <Animated.View style={[styles.topBar, {opacity: fadeAnim}]}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Feather name="chevron-left" size={26} color="#fff" />
+                    </TouchableOpacity>
+                    <View style={styles.topBarTextContainer}>
+                        <Text style={styles.topBarText}>¿No tienes cuenta?</Text>
+                        <TouchableOpacity onPress={() => router.push('/screens/CreateAccountScreen')} style={styles.getStartedButton}>
+                            <Text style={styles.getStartedButtonText}>Regístrate</Text>
+                        </TouchableOpacity>
+                    </View>
+                </Animated.View>
+                <Animated.Text style={[styles.appName, {opacity: fadeAnim, transform: [{scale: fadeAnim}]}]}>Jobsly</Animated.Text>
+            </SafeAreaView>
+        </LinearGradient>
+      
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
+            <Animated.View style={[styles.formContainer, {transform: [{translateY: formAnim}]}]}>
+                <Text style={styles.title}>Bienvenido de Nuevo</Text>
+                <Text style={styles.subtitle}>Ingresa tus datos para continuar</Text>
 
-          <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <Feather name="mail" size={20} color="#8a8d97" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Correo Electrónico"
-                placeholderTextColor="#8a8d97"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </View>
+                <Text style={styles.inputLabel}>Correo Electrónico</Text>
+                <View style={styles.inputWrapper}>
+                    <TextInput 
+                        placeholder="Ingresa tu correo electrónico"
+                        placeholderTextColor="#C7C7CD"
+                        style={styles.input} 
+                        value={email} 
+                        onChangeText={setEmail} 
+                        keyboardType="email-address" 
+                        autoCapitalize="none"
+                    />
+                </View>
 
-            <View style={styles.inputContainer}>
-              <Feather name="lock" size={20} color="#8a8d97" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Contraseña"
-                placeholderTextColor="#8a8d97"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
-            </View>
+                <Text style={styles.inputLabel}>Contraseña</Text>
+                <View style={[styles.inputWrapper, {marginBottom: 20}]}>
+                    <TextInput 
+                        placeholder="Ingresa tu contraseña"
+                        placeholderTextColor="#C7C7CD"
+                        style={styles.input} 
+                        value={password} 
+                        onChangeText={setPassword} 
+                        secureTextEntry={!isPasswordVisible}
+                    />
+                    <TouchableOpacity onPress={() => setPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
+                        <Feather name={isPasswordVisible ? "eye" : "eye-off"} size={22} color="#C7C7CD" />
+                    </TouchableOpacity>
+                </View>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleLogin}
-              disabled={!(email && password)}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={!(email && password) ? ['#4a4e69', '#3a3d51'] : ['#8e44ad', '#c0392b']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Text style={styles.buttonText}>Iniciar Sesión</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={handleLogin} activeOpacity={0.85}>
+                    <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.buttonGradient} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}>
+                        <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
 
-            <View style={styles.footer}>
-              <TouchableOpacity onPress={() => router.push('/screens/CreateAccountScreen')}>
-                <Text style={styles.footerText}>¿No tienes una cuenta? <Text style={styles.signUpText}>Regístrate</Text></Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Animated.View>
-      </LinearGradient>
-    </KeyboardAvoidingView>
+                <TouchableOpacity style={styles.forgotPasswordButton}>
+                    <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+                </TouchableOpacity>
+            </Animated.View>
+        </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F7F7FF', 
   },
-  background: {
+  header: {
+    height: '38%',
+    width: '100%',
+  },
+  safeAreaHeader: {
     flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: 40,
+  },
+  topBar: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 55 : 40,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  contentContainer: {
-    width: '90%',
-    maxWidth: 400,
+  backButton: {
+    padding: 5,
+  },
+  topBarTextContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 18,
+    paddingLeft: 14,
+    height: 36,
   },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
+  topBarText: {
+    color: '#E0D7FF',
+    fontSize: 13,
+    fontWeight: '500',
   },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 20,
+  getStartedButton: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginLeft: 10,
   },
-  title: {
-    fontSize: 32,
+  getStartedButtonText: {
+    color: '#5D23E4',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  appName: {
+    fontSize: 50,
     fontWeight: 'bold',
     color: '#fff',
+    letterSpacing: 1.5,
+  },
+  keyboardView: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  formContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '70%',
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 45,
+    borderTopRightRadius: 45,
+    paddingHorizontal: 35,
+    paddingVertical: 35,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: '#aab1d6',
+    color: '#8A8A93',
+    marginBottom: 30,
   },
-  formContainer: {
-    width: '100%',
-    backgroundColor: '#2a2d3e',
-    borderRadius: 20,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
+  inputLabel: {
+    fontSize: 15,
+    color: '#1A1A1A',
+    marginBottom: 12,
+    fontWeight: '500',
   },
-  inputContainer: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1c1e2a',
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EDEDF1',
+    height: 60,
+    paddingHorizontal: 20,
     marginBottom: 20,
-  },
-  inputIcon: {
-    padding: 15,
   },
   input: {
     flex: 1,
-    height: 50,
-    color: '#fff',
-    paddingRight: 15,
+    height: '100%',
+    color: '#1A1A1A',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  eyeIcon: {
+    paddingLeft: 10,
   },
   button: {
-    borderRadius: 10,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
+    borderRadius: 16,
+    marginTop: 15,
+    shadowColor: '#7033FF',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 15,
   },
   buttonGradient: {
-    paddingVertical: 15,
-    borderRadius: 10,
+    paddingVertical: 20,
+    borderRadius: 16,
     alignItems: 'center',
   },
   buttonText: {
@@ -254,16 +291,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  footer: {
-    marginTop: 20,
-    alignItems: 'center',
+  forgotPasswordButton: {
+    alignSelf: 'center',
+    marginTop: 30,
   },
-  footerText: {
-    color: '#aab1d6',
-  },
-  signUpText: {
-    color: '#8e44ad',
-    fontWeight: 'bold',
+  forgotPasswordText: {
+    color: '#8A8A93',
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
 
