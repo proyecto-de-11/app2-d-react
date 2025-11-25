@@ -1,29 +1,35 @@
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Send, X } from 'lucide-react-native';
+import { Feather, Send } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  ImageBackground, // Import ImageBackground
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { messagingService } from '../../services/messagingService';
 import { socketService } from '../../services/socketService';
 import { Mensaje } from '../../types/messaging-types';
 import { MessageBubble } from './components/MessageBubble';
 
+// URL for a subtle, repeatable background pattern
+const CHAT_BACKGROUND_URI = 'https://www.transparenttextures.com/patterns/gplay.png';
+
 export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  
-  // Obtener parámetros de la URL
+
   const chatId = params.chatId ? parseInt(params.chatId as string) : null;
   const otherUserId = parseInt(params.otherUserId as string);
   const otherUserName = params.otherUserName as string;
@@ -71,11 +77,9 @@ export default function ChatScreen() {
 
   const initializeChat = async () => {
     if (!userId) return;
-
     setLoading(true);
     setMessages([]);
     setNeedsInitialMessage(false);
-
     try {
       if (currentChatId) {
         await loadMessages(currentChatId);
@@ -92,13 +96,8 @@ export default function ChatScreen() {
 
   const verifyOrCreateChat = async () => {
     if (!userId) return;
-
     try {
-      const response = await messagingService.verifyOrCreateChat(
-        userId,
-        otherUserId
-      );
-
+      const response = await messagingService.verifyOrCreateChat(userId, otherUserId);
       if (response.estatus === 200 && response.chat) {
         setCurrentChatId(response.chat.id);
         await loadMessages(response.chat.id);
@@ -123,56 +122,28 @@ export default function ChatScreen() {
 
   const connectWebSocket = () => {
     if (!userId) return;
-
     socketService.connect(userId);
-
     socketService.onNewMessage((nuevoMensaje: Mensaje) => {
-      console.log('📨 Nuevo mensaje recibido:', nuevoMensaje);
-      
-      // Solo agregar el mensaje si NO es del usuario actual
-      // (ya lo agregamos localmente cuando lo enviamos)
       if (nuevoMensaje.usuarioId !== userId) {
         setMessages((prev) => [...prev, nuevoMensaje]);
         setTimeout(() => scrollToBottom(), 100);
-      } else {
-        console.log('🚫 Ignorando mensaje propio desde WebSocket (ya está en la lista)');
       }
     });
-
     socketService.onUserTyping((data: any) => {
-      console.log('⌨️ Evento userTyping recibido:', data);
-      console.log('otherUserId:', otherUserId);
-      console.log('data.usuarioId:', data.usuarioId);
-      console.log('data.isTyping:', data.isTyping);
-      
-      // El servidor envía usuarioId, no chatId
-      const typingUserId = typeof data.usuarioId === 'string' 
-        ? parseInt(data.usuarioId) 
-        : data.usuarioId;
-      
+      const typingUserId = typeof data.usuarioId === 'string' ? parseInt(data.usuarioId) : data.usuarioId;
       if (typingUserId === otherUserId) {
-        console.log('✅ UsuarioId coincide, actualizando estado de typing');
         setIsOtherUserTyping(data.isTyping);
-      } else {
-        console.log('❌ UsuarioId NO coincide');
       }
     });
   };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !userId) return;
-
     const messageText = inputText.trim();
     setInputText('');
-
     try {
       if (needsInitialMessage) {
-        const response = await messagingService.verifyOrCreateChat(
-          userId,
-          otherUserId,
-          messageText
-        );
-
+        const response = await messagingService.verifyOrCreateChat(userId, otherUserId, messageText);
         if (response.estatus === 201 && response.chat) {
           setCurrentChatId(response.chat.id);
           setNeedsInitialMessage(false);
@@ -180,18 +151,9 @@ export default function ChatScreen() {
           connectWebSocket();
         }
       } else if (currentChatId) {
-        // Crear un mensaje temporal para mostrar inmediatamente
-        const tempMessage: Mensaje = {
-          id: Date.now(), // ID temporal
-          usuarioId: userId,
-          mensaje: messageText,
-        };
-
-        // Agregar el mensaje a la lista inmediatamente (optimistic update)
+        const tempMessage: Mensaje = { id: Date.now(), usuarioId: userId, mensaje: messageText };
         setMessages((prev) => [...prev, tempMessage]);
         setTimeout(() => scrollToBottom(), 100);
-
-        // Enviar mensaje por WebSocket
         socketService.sendMessage(currentChatId, messageText);
       }
     } catch (error) {
@@ -215,24 +177,13 @@ export default function ChatScreen() {
 
   const handleInputChange = (text: string) => {
     setInputText(text);
-
-    // Enviar evento de "escribiendo" cuando el usuario escribe
     if (currentChatId && text.length > 0) {
-      console.log('📝 Enviando evento typing: true, chatId:', currentChatId);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       socketService.sendTyping(currentChatId, true);
-
-      // Cancelar el timeout anterior si existe
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      // Después de 2 segundos sin escribir, enviar isTyping: false
       typingTimeoutRef.current = setTimeout(() => {
-        console.log('⏱️ Timeout: Enviando evento typing: false');
         socketService.sendTyping(currentChatId, false);
       }, 2000);
     } else if (currentChatId) {
-      console.log('🛑 Enviando evento typing: false (input vacío)');
       socketService.sendTyping(currentChatId, false);
     }
   };
@@ -242,193 +193,187 @@ export default function ChatScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-          <X size={24} color="#000" />
-        </TouchableOpacity>
-        <Image
-          source={{ uri: otherUserPhoto || 'https://via.placeholder.com/40' }}
-          style={styles.headerImage}
-        />
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerName}>{otherUserName}</Text>
-          {isOtherUserTyping && (
-            <Text style={styles.typingIndicator}>escribiendo...</Text>
-          )}
-        </View>
-      </View>
+    <View style={{flex: 1, backgroundColor: '#F5F3FF'}}>
+      <ImageBackground 
+        source={{ uri: CHAT_BACKGROUND_URI }}
+        style={styles.container}
+        resizeMode="repeat"
+        imageStyle={{ opacity: 0.06 }}
+      >
+        <StatusBar barStyle="light-content" />
+        <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.header}>
+          <View style={styles.headerContent}>
+              <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                <Feather name="chevron-left" size={28} color="#fff" />
+              </TouchableOpacity>
+              <Image
+                source={{ uri: otherUserPhoto || 'https://via.placeholder.com/40' }}
+                style={styles.headerImage}
+              />
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.headerName} numberOfLines={1}>{otherUserName}</Text>
+                {isOtherUserTyping && (
+                  <Text style={styles.typingIndicator}>escribiendo...</Text>
+                )}
+              </View>
+          </View>
+        </LinearGradient>
 
-      {/* Messages */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0084ff" />
-        </View>
-      ) : needsInitialMessage ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            Escribe un mensaje para iniciar la conversación
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          contentContainerStyle={styles.messagesList}
-          onContentSizeChange={scrollToBottom}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No hay mensajes aún</Text>
-            </View>
-          }
-        />
-      )}
-
-      {/* Input */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={inputText}
-          onChangeText={handleInputChange}
-          placeholder="Escribe un mensaje..."
-          placeholderTextColor="#999"
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-          onPress={handleSendMessage}
-          disabled={!inputText.trim()}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >
-          <Send size={20} color={inputText.trim() ? '#0084ff' : '#ccc'} />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          {loading ? (
+            <View style={styles.centeredContainer}>
+              <ActivityIndicator size="large" color="#7033FF" />
+            </View>
+          ) : needsInitialMessage ? (
+            <View style={styles.centeredContainer}>
+              <Text style={styles.emptyText}>
+                Escribe un mensaje para iniciar la conversación
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item, index) => `${item.id}-${index}`}
+              contentContainerStyle={styles.messagesList}
+              onContentSizeChange={scrollToBottom}
+              ListEmptyComponent={
+                <View style={styles.centeredContainer}>
+                  <Text style={styles.emptyText}>Aún no hay mensajes. ¡Saluda!</Text>
+                </View>
+              }
+              style={{backgroundColor: 'transparent'}} // Make FlatList transparent
+            />
+          )}
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={inputText}
+                onChangeText={handleInputChange}
+                placeholder="Escribe un mensaje..."
+                placeholderTextColor="#8A8A93"
+                multiline
+              />
+            </View>
+            <TouchableOpacity onPress={handleSendMessage} disabled={!inputText.trim()} activeOpacity={0.7}>
+              <LinearGradient 
+                colors={inputText.trim() ? ['#7033FF', '#B34CFF'] : ['#E0E0E0', '#E0E0E0']}
+                style={styles.sendButton}
+                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+              >
+                <Send size={22} color="#fff" style={{marginLeft: -2}} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 20, 
+    paddingBottom: 15,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    zIndex: 10, 
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    paddingTop: Platform.OS === 'ios' ? 50 : 12,
+    paddingHorizontal: 15,
   },
   closeButton: {
-    marginRight: 12,
+    padding: 5,
+    marginRight: 10,
   },
   headerImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e0e0e0',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     marginRight: 12,
   },
   headerTextContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   headerName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: 'bold',
+    color: '#fff',
   },
   typingIndicator: {
-    fontSize: 12,
-    color: '#0084ff',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
     fontStyle: 'italic',
-    marginTop: 2,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
+  centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: 'transparent',
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#8A8A93',
     textAlign: 'center',
   },
   messagesList: {
-    paddingVertical: 12,
+    paddingTop: 15,
+    paddingHorizontal: 5,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#EDEDF1',
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#F7F8FC',
+    borderRadius: 25,
+    minHeight: 50,
+    maxHeight: 120,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#E8E6EA',
   },
   input: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
     fontSize: 16,
-    maxHeight: 100,
-    marginRight: 8,
+    color: '#1A1A1A',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 15,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  typingBubbleContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'flex-start',
-  },
-  typingBubble: {
-    backgroundColor: '#e4e6eb',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomLeftRadius: 4,
-  },
-  typingText: {
-    fontSize: 14,
-    color: '#666',
-    marginRight: 6,
-  },
-  typingDots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#666',
-    marginHorizontal: 2,
+    marginBottom: 2,
   },
 });
