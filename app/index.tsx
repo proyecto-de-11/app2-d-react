@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Modal, TouchableWithoutFeedback, ImageBackground, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Image, ImageBackground, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 interface UserData {
   nombreCompleto: string;
@@ -38,9 +37,9 @@ const HomeScreen = () => {
     } catch (err) {
       const error = err as AxiosError;
       if (error.response && error.response.status !== 404) {
-          console.error("Failed to fetch user data for home screen:", error);
-          await AsyncStorage.clear();
-          router.replace('/login');
+        console.error("Failed to fetch user data for home screen:", error);
+        await AsyncStorage.clear();
+        router.replace('/login');
       }
     } finally {
       setLoading(false);
@@ -92,8 +91,8 @@ const HomeScreen = () => {
   return (
     <View style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
       >
@@ -101,14 +100,14 @@ const HomeScreen = () => {
           <View>
             <Text style={styles.welcomeSubtitle}>Bienvenido,</Text>
             {loading ? (
-              <ActivityIndicator color="#1A1A1A" style={{alignSelf: 'flex-start'}}/>
+              <ActivityIndicator color="#1A1A1A" style={{ alignSelf: 'flex-start' }} />
             ) : (
               <Text style={styles.welcomeTitle}>{firstName}</Text>
             )}
           </View>
           <TouchableOpacity style={styles.profileButton} onPress={() => setMenuVisible(true)}>
             {loading || !userData?.fotoPerfil ? (
-               <View style={styles.profileIconPlaceholder}><Feather name="user" size={28} color="#7033FF" /></View>
+              <View style={styles.profileIconPlaceholder}><Feather name="user" size={28} color="#7033FF" /></View>
             ) : (
               <Image source={{ uri: userData.fotoPerfil }} style={styles.profileImage} />
             )}
@@ -128,69 +127,72 @@ const HomeScreen = () => {
         </View>
 
         <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Categorías</Text>
-            <View style={styles.categoriesGrid}>
-                {renderCategory("soccer-field", "Fútbol")}
-                {renderCategory("basketball", "Básquet")}
-                {renderCategory("tennis", "Tenis")}
-                {renderCategory("volleyball", "Vóley")}
-            </View>
+          <Text style={styles.sectionTitle}>Categorías</Text>
+          <View style={styles.categoriesGrid}>
+            {renderCategory("soccer-field", "Fútbol")}
+            {renderCategory("basketball", "Básquet")}
+            {renderCategory("tennis", "Tenis")}
+            {renderCategory("volleyball", "Vóley")}
+          </View>
         </View>
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Promociones</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContainer}>
             <TouchableOpacity style={styles.promoCard}>
-                <ImageBackground 
-                    source={{uri: 'https://images.unsplash.com/photo-1540203204368-a74a36a75f87?q=80&w=1974&auto=format&fit=crop'}}
-                    style={styles.promoBackground}
-                    imageStyle={{borderRadius: 20}}
-                >
-                    <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.promoOverlay}>
-                        <Text style={styles.promoText}>2x1 en canchas de fútbol</Text>
-                        <Text style={styles.promoSubText}>Válido todos los lunes</Text>
-                    </LinearGradient>
-                </ImageBackground>
+              <ImageBackground
+                source={{ uri: 'https://images.unsplash.com/photo-1540203204368-a74a36a75f87?q=80&w=1974&auto=format&fit=crop' }}
+                style={styles.promoBackground}
+                imageStyle={{ borderRadius: 20 }}
+              >
+                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.promoOverlay}>
+                  <Text style={styles.promoText}>2x1 en canchas de fútbol</Text>
+                  <Text style={styles.promoSubText}>Válido todos los lunes</Text>
+                </LinearGradient>
+              </ImageBackground>
             </TouchableOpacity>
             <TouchableOpacity style={styles.promoCard}>
-                <ImageBackground 
-                    source={{uri: 'https://images.unsplash.com/photo-1551955132-a9ac60243457?q=80&w=2070&auto=format&fit=crop'}}
-                    style={styles.promoBackground}
-                    imageStyle={{borderRadius: 20}}
-                >
-                    <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.promoOverlay}>
-                        <Text style={styles.promoText}>25% OFF para estudiantes</Text>
-                        <Text style={styles.promoSubText}>Presentando credencial</Text>
-                    </LinearGradient>
-                </ImageBackground>
+              <ImageBackground
+                source={{ uri: 'https://images.unsplash.com/photo-1551955132-a9ac60243457?q=80&w=2070&auto=format&fit=crop' }}
+                style={styles.promoBackground}
+                imageStyle={{ borderRadius: 20 }}
+              >
+                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.promoOverlay}>
+                  <Text style={styles.promoText}>25% OFF para estudiantes</Text>
+                  <Text style={styles.promoSubText}>Presentando credencial</Text>
+                </LinearGradient>
+              </ImageBackground>
             </TouchableOpacity>
           </ScrollView>
         </View>
 
-        <View style={[styles.sectionContainer, {marginBottom: 100}]}>
+        <View style={[styles.sectionContainer, { marginBottom: 100 }]}>
           <Text style={styles.sectionTitle}>Canchas Populares</Text>
-            <TouchableOpacity style={styles.popularCourtCard}>
-                <Image source={{uri: 'https://i.pinimg.com/564x/e7/6e/8f/e76e8f62c2357a78a63af5c256a42a19.jpg'}} style={styles.popularCourtImage}/>
-                <View style={styles.popularCourtInfo}>
-                    <Text style={styles.popularCourtTitle}>El Campín</Text>
-                    <Text style={styles.popularCourtLocation}>Av. Ficticia 123, Ciudad</Text>
-                    <View style={styles.popularCourtRating}>
-                        <Ionicons name="star" size={16} color="#FFC700"/>
-                        <Text style={styles.popularCourtRatingText}>4.8</Text>
-                    </View>
-                </View>
-                 <View style={styles.popularCourtPriceContainer}>
-                    <Text style={styles.popularCourtPrice}>$50/hr</Text>
-                 </View>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.popularCourtCard}>
+            <Image source={{ uri: 'https://i.pinimg.com/564x/e7/6e/8f/e76e8f62c2357a78a63af5c256a42a19.jpg' }} style={styles.popularCourtImage} />
+            <View style={styles.popularCourtInfo}>
+              <Text style={styles.popularCourtTitle}>El Campín</Text>
+              <Text style={styles.popularCourtLocation}>Av. Ficticia 123, Ciudad</Text>
+              <View style={styles.popularCourtRating}>
+                <Ionicons name="star" size={16} color="#FFC700" />
+                <Text style={styles.popularCourtRatingText}>4.8</Text>
+              </View>
+            </View>
+            <View style={styles.popularCourtPriceContainer}>
+              <Text style={styles.popularCourtPrice}>$50/hr</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-        
+
       </ScrollView>
 
       <View style={styles.bottomNavContainer}>
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navItem}>
             <Ionicons name="home" size={26} color={'#7033FF'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./screens/MisEquiposScreen')} >
+            <Ionicons name="shield" size={26} color="#8A8A93" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.navItem} onPress={() => router.push('./screens/PublicProfilesScreen')} >
             <Ionicons name="compass-outline" size={28} color="#8A8A93" />
@@ -200,18 +202,18 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
-      
+
       {/* Modals remain unchanged, only pasting them here for completeness */}
-      <Modal visible={isProfileModalVisible} transparent={true} animationType="fade" onRequestClose={() => {}}>
+      <Modal visible={isProfileModalVisible} transparent={true} animationType="fade" onRequestClose={() => { }}>
         <View style={styles.profileModalOverlay}>
           <View style={styles.modalContentContainer}>
             <Feather name="info" size={40} color="#fff" />
             <Text style={styles.modalTitle}>¡Completa tu perfil!</Text>
             <Text style={styles.modalText}>Para disfrutar de todas las funcionalidades, por favor, crea tu perfil de usuario.</Text>
             <TouchableOpacity onPress={navigateToCreateProfile}>
-                <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.modalButton} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}>
-                    <Text style={styles.modalButtonText}>Crear Perfil</Text>
-                </LinearGradient>
+              <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.modalButton} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}>
+                <Text style={styles.modalButtonText}>Crear Perfil</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -278,64 +280,64 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 16, color: '#1A1A1A', marginLeft: 10, fontWeight: '500' },
   filterButton: {
-      width: 45,
-      height: 45,
-      borderRadius: 14,
-      backgroundColor: '#7033FF',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginLeft: 10,
+    width: 45,
+    height: 45,
+    borderRadius: 14,
+    backgroundColor: '#7033FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
   },
   sectionContainer: { marginTop: 15 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 20, paddingHorizontal: 20 },
   categoriesGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
   categoryCard: {
-      width: '48%',
-      backgroundColor: '#fff',
-      padding: 15,
-      borderRadius: 18,
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 15,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 4,
+    width: '48%',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
   },
   categoryIconContainer: {
-      width: 45,
-      height: 45,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#F7F3FF',
-      borderRadius: 14,
-      marginRight: 10,
+    width: 45,
+    height: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F7F3FF',
+    borderRadius: 14,
+    marginRight: 10,
   },
   categoryText: { fontSize: 14, color: '#1A1A1A', fontWeight: '600' },
   horizontalScrollContainer: { paddingHorizontal: 20, paddingBottom: 10, gap: 15 },
   promoCard: {
-      width: 280,
-      height: 160,
-      borderRadius: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 8,
-      backgroundColor: '#fff',
+    width: 280,
+    height: 160,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    backgroundColor: '#fff',
   },
   promoBackground: { width: '100%', height: '100%' },
   promoOverlay: {
-      flex: 1,
-      justifyContent: 'flex-end',
-      padding: 15,
-      borderRadius: 20,
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 15,
+    borderRadius: 20,
   },
   promoText: { fontSize: 18, color: '#fff', fontWeight: 'bold', marginBottom: 5 },
   promoSubText: { fontSize: 14, color: '#E0E0E0', fontWeight: '500' },
@@ -359,10 +361,10 @@ const styles = StyleSheet.create({
   popularCourtRating: { flexDirection: 'row', alignItems: 'center' },
   popularCourtRatingText: { marginLeft: 5, color: '#1A1A1A', fontWeight: '600' },
   popularCourtPriceContainer: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      backgroundColor: '#F7F3FF',
-      borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F7F3FF',
+    borderRadius: 10,
   },
   popularCourtPrice: { color: '#7033FF', fontWeight: 'bold', fontSize: 14 },
   bottomNavContainer: {

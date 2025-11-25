@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { MessageSquare, Users } from 'lucide-react-native';
 import React from 'react';
@@ -16,6 +17,13 @@ export default function TabsLayout() {
         },
       }}
     >
+      <Tabs.Screen
+        name="equipos"
+        options={{
+          title: 'Mis Equipos',
+          tabBarIcon: ({ color, size }) => <Ionicons name="shield" size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="profiles"
         options={{
