@@ -54,3 +54,30 @@ export interface EquiposParams {
     size?: number;
     sort?: string[];
 }
+
+/**
+ * DTO para crear un nuevo equipo
+ */
+export interface CrearEquipoDTO {
+    nombre: string;
+    creadoPor: number;
+    tipoDeporteId: number;
+    descripcion: string;
+    logo?: string;
+    colorPrincipal: string;
+    colorSecundario: string;
+    ciudad: string;
+    nivel?: string;
+    maxMiembros: number;
+    requiereAprobacion: boolean;
+    estaActivo?: boolean;
+}
+
+export interface CrearMiembroDTO {
+    equipoId: number;
+    usuarioId: number;
+    rol: string;
+    numeroCamiseta: number;
+    posicion: string;
+    estado: string;
+}
