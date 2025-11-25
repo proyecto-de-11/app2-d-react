@@ -9,12 +9,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
 
 // ======================================================================================
-// HOME SCREEN API INTEGRATION
-// - Fetches and displays a list of popular courts from the provided API.
-// - Defines a TypeScript interface for the `Cancha` object for type safety.
-// - Adds loading and data states to handle the API lifecycle.
-// - Creates a reusable `PopularCourtCard` component for clean, dynamic rendering.
-// - Displays a loading indicator or a "no courts" message when appropriate.
+// HOME SCREEN API FIX (BASE64 IMAGES)
+// - Updates the `Cancha` interface to include the new `imagenes` field.
+// - Modifies the `PopularCourtCard` to correctly render Base64 encoded images.
+// - Creates a `data:image/jpeg;base64,` URI if an image is present.
+// - Includes a fallback to a placeholder image if `imagenes` is null.
 // ======================================================================================
 
 
@@ -23,37 +22,42 @@ interface UserData {
   fotoPerfil: string;
 }
 
-// 1. Define the interface for the Court object based on the API response
+// 1. Update the interface to include the new `imagenes` field
 interface Cancha {
   id: number;
   nombre: string;
   ubicacion: string;
   calificacion_promedio: string;
   precio_hora: string;
-  // Adding a placeholder for the image, as it's not in the API response
-  imagen_url?: string; 
+  imagenes: string | null; // This field will contain the Base64 string
 }
 
-// 2. Create a reusable component for the popular court card
-const PopularCourtCard: React.FC<{ court: Cancha }> = ({ court }) => (
-  <TouchableOpacity style={styles.popularCourtCard}>
-    <Image 
-      source={{ uri: court.imagen_url || `https://picsum.photos/seed/${court.id}/200/200` }} 
-      style={styles.popularCourtImage}
-    />
-    <View style={styles.popularCourtInfo}>
-        <Text style={styles.popularCourtTitle} numberOfLines={1}>{court.nombre}</Text>
-        <Text style={styles.popularCourtLocation} numberOfLines={1}>{court.ubicacion}</Text>
-        <View style={styles.popularCourtRating}>
-            <Ionicons name="star" size={16} color="#FFC700"/>
-            <Text style={styles.popularCourtRatingText}>{parseFloat(court.calificacion_promedio).toFixed(1)}</Text>
-        </View>
-    </View>
-      <View style={styles.popularCourtPriceContainer}>
-        <Text style={styles.popularCourtPrice}>${parseFloat(court.precio_hora).toFixed(2)}/hr</Text>
+// 2. Update the reusable component to handle Base64 images
+const PopularCourtCard: React.FC<{ court: Cancha }> = ({ court }) => {
+  const imageSource = court.imagenes
+    ? { uri: `data:image/jpeg;base64,${court.imagenes}` }
+    : { uri: `https://picsum.photos/seed/${court.id}/200/200` }; // Fallback
+
+  return (
+    <TouchableOpacity style={styles.popularCourtCard}>
+      <Image 
+        source={imageSource}
+        style={styles.popularCourtImage}
+      />
+      <View style={styles.popularCourtInfo}>
+          <Text style={styles.popularCourtTitle} numberOfLines={1}>{court.nombre}</Text>
+          <Text style={styles.popularCourtLocation} numberOfLines={1}>{court.ubicacion}</Text>
+          <View style={styles.popularCourtRating}>
+              <Ionicons name="star" size={16} color="#FFC700"/>
+              <Text style={styles.popularCourtRatingText}>{parseFloat(court.calificacion_promedio).toFixed(1)}</Text>
+          </View>
       </View>
-  </TouchableOpacity>
-);
+        <View style={styles.popularCourtPriceContainer}>
+          <Text style={styles.popularCourtPrice}>${parseFloat(court.precio_hora).toFixed(2)}/hr</Text>
+        </View>
+    </TouchableOpacity>
+  );
+};
 
 const HomeScreen = () => {
   const router = useRouter();
@@ -62,21 +66,17 @@ const HomeScreen = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [isProfileModalVisible, setProfileModalVisible] = useState(false);
 
-  // 3. Add state for courts and their loading status
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [canchasLoading, setCanchasLoading] = useState(true);
 
-  // 4. Create a function to fetch courts from the API
   const fetchCanchas = async () => {
     setCanchasLoading(true);
     try {
       const response = await axios.get('https://apicanchasyreservas.onrender.com/api/canchas');
-      // Filter for active courts only, as per API structure
       const activeCanchas = response.data.filter((cancha: any) => cancha.esta_activa === 1);
       setCanchas(activeCanchas);
     } catch (error) {
       console.error("Failed to fetch courts:", error);
-      // Optionally, set an error state here to show a message to the user
     } finally {
       setCanchasLoading(false);
     }
@@ -119,7 +119,7 @@ const HomeScreen = () => {
         }
       };
       checkProfileStatus();
-      fetchCanchas(); // Fetch courts every time the screen is focused
+      fetchCanchas(); 
     }, [])
   );
 
@@ -150,7 +150,6 @@ const HomeScreen = () => {
     </TouchableOpacity>
   );
   
-  // 5. Create a render function for the popular courts section
   const renderPopularCourts = () => {
     if (canchasLoading) {
       return <ActivityIndicator size="large" color="#7033FF" style={{marginTop: 20}}/>;
@@ -243,7 +242,6 @@ const HomeScreen = () => {
 
         <View style={[styles.sectionContainer, {marginBottom: 100}]}>
           <Text style={styles.sectionTitle}>Canchas Populares</Text>
-            {/* 6. Replace static card with the dynamic render function */}
             {renderPopularCourts()}
         </View>
         
@@ -414,7 +412,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginBottom: 15, // Added margin for spacing between cards
   },
-  popularCourtImage: { width: 80, height: 80, borderRadius: 14 },
+  popularCourtImage: { width: 80, height: 80, borderRadius: 14, backgroundColor: '#f0f0f0' }, // Added a bg color for placeholder
   popularCourtInfo: { flex: 1, marginLeft: 15, justifyContent: 'center' },
   popularCourtTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 5 },
   popularCourtLocation: { fontSize: 14, color: '#8A8A93', marginBottom: 8 },
@@ -446,8 +444,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Changed for a lighter feel
-    backdropFilter: 'blur(10px)', // For iOS blur effect
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(10px)', 
     borderRadius: 22,
     paddingVertical: 18,
     shadowColor: '#000',
