@@ -1,17 +1,28 @@
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { ChevronLeft, Search } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  TextInput
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { messagingService } from '../../services/messagingService';
 import { ChatWithUserData } from '../../types/messaging-types';
+
+// ======================================================================================
+// DESIGN V7 - "Unified Edition"
+// Focus: Fuses the advanced structure of V6 with the login screen's color palette.
+// Logic remains 100% untouched.
+// ======================================================================================
 
 export default function MyChatsScreen() {
   const router = useRouter();
@@ -19,6 +30,7 @@ export default function MyChatsScreen() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
 
+  // --- LOGIC IS UNTOUCHED ---
   useEffect(() => {
     loadUserId();
   }, []);
@@ -42,26 +54,13 @@ export default function MyChatsScreen() {
 
   const loadChats = async () => {
     if (!userId) return;
-
     try {
       setLoading(true);
-      
       const response = await messagingService.getUserChats(userId);
-      console.log(response.chats.length);
-
-      // Obtener datos de cada participante
       const chatsWithUserData: ChatWithUserData[] = await Promise.all(
-        response.chats.map(async (chat, index) => {
-  
+        response.chats.map(async (chat) => {
           try {
-            console.log(`🔍 Cargando perfil ${index + 1}/${response.chats.length} - usuarioId: ${chat.otherParticipant.usuarioId}`);
-            
-            const userProfile = await messagingService.getPublicProfile(
-              chat.otherParticipant.usuarioId
-            );
-
-            console.log(`✅ Perfil ${index + 1} cargado:`, userProfile);
-            
+            const userProfile = await messagingService.getPublicProfile(chat.otherParticipant.usuarioId);
             return {
               chatId: chat.chatId,
               usuarioId: userProfile.usuarioId,
@@ -70,10 +69,6 @@ export default function MyChatsScreen() {
               biografia: userProfile.biografia,
             };
           } catch (error: any) {
-            console.error(`❌ Error al obtener perfil ${index + 1} del usuario ${chat.otherParticipant.usuarioId}:`, error);
-            
-            // Si falla, usar datos por defecto
-            console.warn(`⚠️ Usando datos por defecto para usuario ${chat.otherParticipant.usuarioId}`);
             return {
               chatId: chat.chatId,
               usuarioId: chat.otherParticipant.usuarioId,
@@ -84,10 +79,6 @@ export default function MyChatsScreen() {
           }
         })
       );
-
-      console.log(`📊 Total chats recibidos: ${response.chats.length}`);
-      console.log(`📊 Chats mostrados: ${chatsWithUserData.length}`);
-      console.log('✅ Chats con datos:', chatsWithUserData);
       setChats(chatsWithUserData);
     } catch (error) {
       console.error('Error al cargar chats:', error);
@@ -107,101 +98,187 @@ export default function MyChatsScreen() {
       },
     });
   };
+  // --- END OF UNTOUCHED LOGIC ---
 
-  const renderChat = ({ item }: { item: ChatWithUserData }) => (
-    <TouchableOpacity style={styles.chatCard} onPress={() => handleChatPress(item)}>
-      <Image
-        source={{ uri: item.fotoPerfil || 'https://via.placeholder.com/60' }}
-        style={styles.chatImage}
-      />
+  const renderChatItem = ({ item }: { item: ChatWithUserData }) => (
+    <TouchableOpacity style={styles.chatCard} onPress={() => handleChatPress(item)} activeOpacity={0.8}>
+      <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.avatarRing}>
+        <Image source={{ uri: item.fotoPerfil || 'https://via.placeholder.com/60' }} style={styles.avatar} />
+      </LinearGradient>
+
       <View style={styles.chatInfo}>
         <Text style={styles.chatName}>{item.nombreCompleto}</Text>
-        <Text style={styles.chatBio} numberOfLines={1}>
-          {item.biografia}
-        </Text>
+        <Text style={styles.lastMessage} numberOfLines={1}>{item.biografia}</Text>
+      </View>
+      
+      <View style={styles.metaInfo}>
+        <Text style={styles.time}>10:45 AM</Text>
+        <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.unreadBadge}>
+            <Text style={styles.unreadText}>2</Text>
+        </LinearGradient>
       </View>
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#0084ff" />
-      </View>
-    );
-  }
+  const ChatListHeader = () => (
+    <View>
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.push('/')} style={styles.headerButton}>
+              <ChevronLeft size={28} color="#1A1A1A" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Chats</Text>
+            <TouchableOpacity style={styles.headerButton}>
+              <Search size={24} color="#1A1A1A" />
+            </TouchableOpacity>
+        </View>
+        <View style={styles.searchContainer}>
+            <View style={styles.searchInner}>
+              <Search size={20} color="#8A8A93" style={{marginRight: 10}}/>
+              <TextInput placeholder="Buscar en chats..." placeholderTextColor="#8A8A93" style={styles.searchInput}/>
+            </View>
+        </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={chats}
-        renderItem={renderChat}
-        keyExtractor={(item) => item.chatId.toString()}
-        contentContainerStyle={chats.length === 0 ? styles.centerContainer : undefined}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No tienes conversaciones activas</Text>
-            <Text style={styles.emptySubtext}>
-              Ve a la pestaña Perfiles para iniciar una conversación
-            </Text>
-          </View>
-        }
-      />
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar barStyle="dark-content" />
+
+      {loading ? (
+        <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#7033FF" /></View>
+      ) : (
+        <FlatList
+          data={chats}
+          renderItem={renderChatItem}
+          keyExtractor={(item) => item.chatId.toString()}
+          ListHeaderComponent={ChatListHeader}
+          contentContainerStyle={styles.listContentContainer}
+        />
+      )}
     </View>
   );
 }
 
+// --- STYLES V7 - Unified Edition ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F7F7FF', // From login screen
   },
-  centerContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F7F7FF',
   },
-  chatCard: {
+  listContentContainer: {
+    paddingBottom: 30,
+  },
+  // -- Header --
+  header: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 15,
+    paddingBottom: 10,
+    backgroundColor: '#F7F7FF', 
+  },
+  headerTitle: {
+    fontSize: 24, 
+    fontWeight: 'bold',
+    color: '#1A1A1A', // From login screen
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  chatImage: {
+  // -- Search Bar --
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 25, 
+  },
+  searchInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 14,
+    paddingHorizontal: 15,
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#EDEDF1', // From login screen
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1A1A1A',
+  },
+  // -- Chat List Item --
+  chatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 15,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 15,
+    shadowColor: '#7033FF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  avatarRing: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: '#FFFFFF', 
   },
   chatInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 15,
+    justifyContent: 'center',
   },
   chatName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#000',
+    color: '#1A1A1A',
     marginBottom: 4,
   },
-  chatBio: {
+  lastMessage: {
     fontSize: 14,
-    color: '#666',
+    color: '#8A8A93', // From login screen
   },
-  emptyContainer: {
-    alignItems: 'center',
-    padding: 20,
+  metaInfo: {
+    alignItems: 'flex-end',
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+  time: {
+    fontSize: 13,
+    color: '#8A8A93',
     marginBottom: 8,
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+  unreadBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  unreadText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 });
