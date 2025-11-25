@@ -12,19 +12,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Modal
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import axios, { isAxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Progress from 'react-native-progress';
 
-// Versión final. Corregido el bug que impedía hacer clic en "Regístrate".
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const formAnim = useRef(new Animated.Value(600)).current;
@@ -50,6 +52,7 @@ const LoginScreen = () => {
   }, [fadeAnim, formAnim]);
 
   const handleLogin = async () => {
+    setIsLoading(true);
     try {
       const response = await axios.post('https://apiautentificacion.onrender.com/api/auth/login', {
         email,
@@ -86,12 +89,28 @@ const LoginScreen = () => {
         }
       }
       Alert.alert('Error de Inicio de Sesión', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
         <StatusBar barStyle="light-content" />
+
+        <Modal
+            transparent={true}
+            animationType="fade"
+            visible={isLoading}
+        >
+            <View style={styles.loadingOverlay}>
+                <View style={styles.loadingContainer}>
+                    <Progress.Circle size={80} indeterminate={true} borderWidth={5} color={'#fff'} />
+                    <Text style={styles.loadingText}>Iniciando Sesión...</Text>
+                </View>
+            </View>
+        </Modal>
+
         <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.header}>
             <SafeAreaView style={styles.safeAreaHeader}>
                 <Animated.View style={[styles.topBar, {opacity: fadeAnim}]}>
@@ -109,7 +128,6 @@ const LoginScreen = () => {
             </SafeAreaView>
         </LinearGradient>
       
-        {/* CORRECCIÓN: Se añade pointerEvents="box-none" para permitir clics en los elementos de detrás */}
         <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
             style={styles.keyboardView}
@@ -164,6 +182,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F7FF', 
+  },
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    backgroundColor: '#1F222A',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#fff',
+    marginTop: 20,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   header: {
     height: '38%',
