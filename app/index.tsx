@@ -8,42 +8,102 @@ import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
 
+// ======================================================================================
+// HOME SCREEN API INTEGRATION
+// - Fetches and displays a list of popular courts from the provided API.
+// - Defines a TypeScript interface for the `Cancha` object for type safety.
+// - Adds loading and data states to handle the API lifecycle.
+// - Creates a reusable `PopularCourtCard` component for clean, dynamic rendering.
+// - Displays a loading indicator or a "no courts" message when appropriate.
+// ======================================================================================
+
+
 interface UserData {
   nombreCompleto: string;
   fotoPerfil: string;
 }
 
+// 1. Define the interface for the Court object based on the API response
+interface Cancha {
+  id: number;
+  nombre: string;
+  ubicacion: string;
+  calificacion_promedio: string;
+  precio_hora: string;
+  // Adding a placeholder for the image, as it's not in the API response
+  imagen_url?: string; 
+}
+
+// 2. Create a reusable component for the popular court card
+const PopularCourtCard: React.FC<{ court: Cancha }> = ({ court }) => (
+  <TouchableOpacity style={styles.popularCourtCard}>
+    <Image 
+      source={{ uri: court.imagen_url || `https://picsum.photos/seed/${court.id}/200/200` }} 
+      style={styles.popularCourtImage}
+    />
+    <View style={styles.popularCourtInfo}>
+        <Text style={styles.popularCourtTitle} numberOfLines={1}>{court.nombre}</Text>
+        <Text style={styles.popularCourtLocation} numberOfLines={1}>{court.ubicacion}</Text>
+        <View style={styles.popularCourtRating}>
+            <Ionicons name="star" size={16} color="#FFC700"/>
+            <Text style={styles.popularCourtRatingText}>{parseFloat(court.calificacion_promedio).toFixed(1)}</Text>
+        </View>
+    </View>
+      <View style={styles.popularCourtPriceContainer}>
+        <Text style={styles.popularCourtPrice}>${parseFloat(court.precio_hora).toFixed(2)}/hr</Text>
+      </View>
+  </TouchableOpacity>
+);
+
 const HomeScreen = () => {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true);
   const [menuVisible, setMenuVisible] = useState(false);
   const [isProfileModalVisible, setProfileModalVisible] = useState(false);
 
+  // 3. Add state for courts and their loading status
+  const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const [canchasLoading, setCanchasLoading] = useState(true);
+
+  // 4. Create a function to fetch courts from the API
+  const fetchCanchas = async () => {
+    setCanchasLoading(true);
+    try {
+      const response = await axios.get('https://apicanchasyreservas.onrender.com/api/canchas');
+      // Filter for active courts only, as per API structure
+      const activeCanchas = response.data.filter((cancha: any) => cancha.esta_activa === 1);
+      setCanchas(activeCanchas);
+    } catch (error) {
+      console.error("Failed to fetch courts:", error);
+      // Optionally, set an error state here to show a message to the user
+    } finally {
+      setCanchasLoading(false);
+    }
+  };
+
   const fetchUserData = async () => {
-    setLoading(true);
+    setUserLoading(true);
     try {
       const userId = await AsyncStorage.getItem('userId');
       const token = await AsyncStorage.getItem('userToken');
-
       if (!userId || !token) {
         router.replace('/login');
         return;
       }
-
       const response = await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserData(response.data);
     } catch (err) {
-      const error = err as AxiosError;
-      if (error.response && error.response.status !== 404) {
-          console.error("Failed to fetch user data for home screen:", error);
+       const error = err as AxiosError;
+       if (error.response && error.response.status !== 404) {
+          console.error("Failed to fetch user data:", error);
           await AsyncStorage.clear();
           router.replace('/login');
       }
     } finally {
-      setLoading(false);
+      setUserLoading(false);
     }
   };
 
@@ -59,6 +119,7 @@ const HomeScreen = () => {
         }
       };
       checkProfileStatus();
+      fetchCanchas(); // Fetch courts every time the screen is focused
     }, [])
   );
 
@@ -88,6 +149,19 @@ const HomeScreen = () => {
       <Text style={styles.categoryText}>{name}</Text>
     </TouchableOpacity>
   );
+  
+  // 5. Create a render function for the popular courts section
+  const renderPopularCourts = () => {
+    if (canchasLoading) {
+      return <ActivityIndicator size="large" color="#7033FF" style={{marginTop: 20}}/>;
+    }
+
+    if (canchas.length === 0) {
+      return <Text style={styles.noCourtsText}>No hay canchas populares disponibles en este momento.</Text>;
+    }
+
+    return canchas.map(court => <PopularCourtCard key={court.id} court={court} />);
+  };
 
   return (
     <View style={styles.safeArea}>
@@ -100,14 +174,14 @@ const HomeScreen = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.welcomeSubtitle}>Bienvenido,</Text>
-            {loading ? (
+            {userLoading ? (
               <ActivityIndicator color="#1A1A1A" style={{alignSelf: 'flex-start'}}/>
             ) : (
               <Text style={styles.welcomeTitle}>{firstName}</Text>
             )}
           </View>
           <TouchableOpacity style={styles.profileButton} onPress={() => setMenuVisible(true)}>
-            {loading || !userData?.fotoPerfil ? (
+            {userLoading || !userData?.fotoPerfil ? (
                <View style={styles.profileIconPlaceholder}><Feather name="user" size={28} color="#7033FF" /></View>
             ) : (
               <Image source={{ uri: userData.fotoPerfil }} style={styles.profileImage} />
@@ -119,7 +193,7 @@ const HomeScreen = () => {
           <Feather name="search" size={22} color="#8A8A93" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar..."
+            placeholder="Buscar canchas, torneos..."
             placeholderTextColor="#8A8A93"
           />
           <TouchableOpacity style={styles.filterButton}>
@@ -139,7 +213,7 @@ const HomeScreen = () => {
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Promociones</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContainer}>
+           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContainer}>
             <TouchableOpacity style={styles.promoCard}>
                 <ImageBackground 
                     source={{uri: 'https://images.unsplash.com/photo-1540203204368-a74a36a75f87?q=80&w=1974&auto=format&fit=crop'}}
@@ -169,24 +243,13 @@ const HomeScreen = () => {
 
         <View style={[styles.sectionContainer, {marginBottom: 100}]}>
           <Text style={styles.sectionTitle}>Canchas Populares</Text>
-            <TouchableOpacity style={styles.popularCourtCard}>
-                <Image source={{uri: 'https://i.pinimg.com/564x/e7/6e/8f/e76e8f62c2357a78a63af5c256a42a19.jpg'}} style={styles.popularCourtImage}/>
-                <View style={styles.popularCourtInfo}>
-                    <Text style={styles.popularCourtTitle}>El Campín</Text>
-                    <Text style={styles.popularCourtLocation}>Av. Ficticia 123, Ciudad</Text>
-                    <View style={styles.popularCourtRating}>
-                        <Ionicons name="star" size={16} color="#FFC700"/>
-                        <Text style={styles.popularCourtRatingText}>4.8</Text>
-                    </View>
-                </View>
-                 <View style={styles.popularCourtPriceContainer}>
-                    <Text style={styles.popularCourtPrice}>$50/hr</Text>
-                 </View>
-            </TouchableOpacity>
+            {/* 6. Replace static card with the dynamic render function */}
+            {renderPopularCourts()}
         </View>
         
       </ScrollView>
 
+      {/* --- Unchanged Code: Bottom Nav & Modals --- */}
       <View style={styles.bottomNavContainer}>
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navItem}>
@@ -200,8 +263,6 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
-      
-      {/* Modals remain unchanged, only pasting them here for completeness */}
       <Modal visible={isProfileModalVisible} transparent={true} animationType="fade" onRequestClose={() => {}}>
         <View style={styles.profileModalOverlay}>
           <View style={styles.modalContentContainer}>
@@ -351,6 +412,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 5,
+    marginBottom: 15, // Added margin for spacing between cards
   },
   popularCourtImage: { width: 80, height: 80, borderRadius: 14 },
   popularCourtInfo: { flex: 1, marginLeft: 15, justifyContent: 'center' },
@@ -365,6 +427,13 @@ const styles = StyleSheet.create({
       borderRadius: 10,
   },
   popularCourtPrice: { color: '#7033FF', fontWeight: 'bold', fontSize: 14 },
+  noCourtsText: {
+    textAlign: 'center',
+    color: '#8A8A93',
+    fontSize: 16,
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
   bottomNavContainer: {
     position: 'absolute',
     bottom: 0,
@@ -377,13 +446,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: 'rgba(218, 218, 218, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Changed for a lighter feel
+    backdropFilter: 'blur(10px)', // For iOS blur effect
     borderRadius: 22,
     paddingVertical: 18,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
     elevation: 10,
   },
   navItem: { alignItems: 'center', padding: 5 },
