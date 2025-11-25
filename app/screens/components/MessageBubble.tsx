@@ -8,71 +8,74 @@ interface MessageBubbleProps {
   isOwn: boolean;
 }
 
+// ======================================================================================
+// VIBRANT EDITION - MessageBubble
+// - Bubbly, rounded shapes with more pronounced shadows for a "pop" effect.
+// - Logic remains untouched.
+// ======================================================================================
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ mensaje, isOwn }) => {
+  const bubbleStyles = isOwn ? [styles.bubble, styles.sentBubble] : [styles.bubble, styles.receivedBubble];
+  const rowStyles = isOwn ? [styles.messageRow, styles.rowSent] : [styles.messageRow, styles.rowReceived];
+  
   if (isOwn) {
     return (
-      <View style={[styles.container, styles.ownContainer]}>
+      <View style={rowStyles}>
         <LinearGradient
-          colors={['#8A4CFF', '#5D23E4']}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={[styles.bubble, styles.ownBubble, styles.shadow]}
+          colors={['#7033FF', '#A044FF']} // Vibrant brand gradient
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={bubbleStyles}
         >
-          <Text style={styles.ownText}>{mensaje}</Text>
+          <Text style={styles.messageTextSent}>{mensaje}</Text>
         </LinearGradient>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, styles.otherContainer]}>
-      <View style={[styles.bubble, styles.otherBubble, styles.shadow]}>
-        <Text style={styles.otherText}>{mensaje}</Text>
+    <View style={rowStyles}>
+      <View style={bubbleStyles}>
+        <Text style={styles.messageTextReceived}>{mensaje}</Text>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 4,
-    marginHorizontal: 12,
+  messageRow: {
+    flexDirection: 'row',
+    marginVertical: 5,
+    marginHorizontal: 10,
   },
-  ownContainer: {
-    alignItems: 'flex-end',
+  rowSent: {
+    justifyContent: 'flex-end',
   },
-  otherContainer: {
-    alignItems: 'flex-start',
+  rowReceived: {
+    justifyContent: 'flex-start',
   },
   bubble: {
-    maxWidth: '85%',
-    paddingHorizontal: 16,
+    maxWidth: '80%',
+    paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 25, // Fully rounded corners for a bubbly feel
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, // Softer but visible shadow
+    shadowRadius: 5,
+    elevation: 3,
   },
-  shadow: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+  sentBubble: {
+    // The gradient is the background
   },
-  ownBubble: {
-    borderBottomRightRadius: 4, // Modern tail effect
+  receivedBubble: {
+    backgroundColor: '#FFFFFF', // Changed to a brighter white to pop against texture
   },
-  otherBubble: {
-    backgroundColor: '#FFFFFF',
-    borderBottomLeftRadius: 4, // Modern tail effect
-  },
-  ownText: {
+  messageTextSent: {
     color: '#ffffff',
     fontSize: 16,
     lineHeight: 22,
   },
-  otherText: {
+  messageTextReceived: {
     color: '#1A1A1A',
     fontSize: 16,
     lineHeight: 22,

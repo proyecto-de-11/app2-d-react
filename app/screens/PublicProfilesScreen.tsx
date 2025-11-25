@@ -16,7 +16,14 @@ import { useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { messagingService } from '../../services/messagingService';
 import { Usuario } from '../../types/messaging-types';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { ChevronLeft, MessageSquare, Search } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// ======================================================================================
+// UNIFIED EDITION - PublicProfilesScreen
+// - Matches the visual identity of the new MyChatsScreen and ChatScreen.
+// - Logic is 100% untouched.
+// ======================================================================================
 
 export default function PublicProfilesScreen() {
   const router = useRouter();
@@ -25,6 +32,7 @@ export default function PublicProfilesScreen() {
   const [userId, setUserId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // --- LOGIC IS UNTOUCHED ---
   useEffect(() => {
     loadUserId();
     loadProfiles();
@@ -74,43 +82,55 @@ export default function PublicProfilesScreen() {
     profiles.filter(p => 
         p.nombreCompleto.toLowerCase().includes(searchQuery.toLowerCase())
     ), [profiles, searchQuery]);
+  // --- END OF UNTOUCHED LOGIC ---
 
   const renderProfile = ({ item }: { item: Usuario }) => (
     <View style={styles.profileCard}>
         <Image source={{ uri: item.fotoPerfil || 'https://via.placeholder.com/80' }} style={styles.profileImage} />
         <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{item.nombreCompleto}</Text>
-            <Text style={styles.profileBio} numberOfLines={2}>{item.biografia}</Text>
+            <Text style={styles.profileBio} numberOfLines={2}>{item.biografia || 'Sin biografía disponible.'}</Text>
         </View>
-        <TouchableOpacity style={styles.messageButton} onPress={() => handleMessagePress(item)}>
-            <Ionicons name="chatbubble-ellipses-outline" size={22} color="#7033FF" />
+        <TouchableOpacity onPress={() => handleMessagePress(item)} activeOpacity={0.8}>
+            <LinearGradient 
+                colors={['#7033FF', '#B34CFF']} 
+                style={styles.messageButton}
+                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+            >
+                <MessageSquare size={22} color="#FFFFFF" />
+            </LinearGradient>
         </TouchableOpacity>
+    </View>
+  );
+
+  const ListHeader = () => (
+    <View>
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+                <ChevronLeft size={28} color="#1A1A1A" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Explorar Perfiles</Text>
+            <View style={{width: 44}}/>
+        </View>
+        <View style={styles.searchContainer}>
+            <View style={styles.searchInner}>
+              <Search size={20} color="#8A8A93" style={{marginRight: 10}}/>
+              <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar por nombre..."
+                  placeholderTextColor="#8A8A93"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+              />
+            </View>
+        </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar hidden />
-      <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Feather name="chevron-left" size={28} color="#1A1A1A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Explorar</Text>
-          <View style={{width: 40}}/>
-      </View>
-
-      <View style={styles.searchContainer}>
-          <Feather name="search" size={22} color="#8A8A93" />
-          <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar por nombre..."
-              placeholderTextColor="#8A8A93"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-          />
-      </View>
-
+      <StatusBar barStyle="dark-content" />
       {loading ? (
         <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color="#7033FF" />
@@ -121,6 +141,7 @@ export default function PublicProfilesScreen() {
           data={filteredProfiles}
           renderItem={renderProfile}
           keyExtractor={(item) => item.usuarioId.toString()}
+          ListHeaderComponent={ListHeader}
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={
             <View style={styles.centerContainer}>
@@ -133,10 +154,11 @@ export default function PublicProfilesScreen() {
   );
 }
 
+// --- STYLES - Unified Edition ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FC',
+    backgroundColor: '#F7F7FF', // Unified background
   },
   header: {
     flexDirection: 'row',
@@ -144,9 +166,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 10,
-    marginTop: 35,
+    marginTop: 10,
   },
-  backButton: {
+  headerButton: {
       padding: 5,
   },
   headerTitle: {
@@ -155,56 +177,53 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   searchContainer: {
-    marginHorizontal: 20,
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    height: 55,
+    paddingHorizontal: 20,
+    paddingBottom: 15, 
+    paddingTop: 10,
+  },
+  searchInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 5,
-    marginBottom: 15,
-    marginTop: 5,
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 14,
+    paddingHorizontal: 15,
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#EDEDF1',
   },
   searchInput: {
       flex: 1,
       fontSize: 16,
       color: '#1A1A1A',
-      marginLeft: 12,
-      fontWeight: '500',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    marginTop: -80, // Adjust to center in the remaining space
   },
   listContainer: {
     paddingHorizontal: 20,
-    paddingTop: 10,
     paddingBottom: 20,
   },
   profileCard: {
     flexDirection: 'row',
     backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 12,
+    borderRadius: 20,
+    padding: 15,
     marginBottom: 15,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowColor: '#7033FF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
   },
   profileImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 20,
+    width: 65,
+    height: 65,
+    borderRadius: 22, // Slightly more rounded
     backgroundColor: '#e0e0e0',
   },
   profileInfo: {
@@ -212,10 +231,10 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   profileName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#1A1A1A',
-    marginBottom: 5,
+    marginBottom: 6,
   },
   profileBio: {
     fontSize: 14,
@@ -223,10 +242,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   messageButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: '#F7F3FF',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
