@@ -29,3 +29,22 @@ export const obtenerTipoDeportePorId = async (id: number): Promise<TipoDeporte> 
         throw error;
     }
 };
+
+export const obtenerTiposDeporte = async (): Promise<TipoDeporte[]> => {
+    try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await axios.get<TipoDeporte[]>(
+            `${API_URL}/lista`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener tipos de deporte:', error);
+        throw error;
+    }
+};

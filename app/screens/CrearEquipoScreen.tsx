@@ -1,4 +1,5 @@
 import { crearEquipo, obtenerUsuarioId, registrarMiembro } from '@/services/equipos.service';
+import { obtenerTiposDeporte, TipoDeporte } from '@/services/tipos-deporte.service';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -6,13 +7,14 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Image,
     ScrollView,
     StyleSheet,
     Switch,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,13 +30,17 @@ export default function CrearEquipoScreen() {
     const [colorSecundario, setColorSecundario] = useState('#FF9800');
     const [requiereAprobacion, setRequiereAprobacion] = useState(true);
     const [nivel, setNivel] = useState('');
+    const [tiposDeporte, setTiposDeporte] = useState<TipoDeporte[]>([]);
+    const [tipoDeporteId, setTipoDeporteId] = useState<number | null>(null);
 
     // UI states
     const [loading, setLoading] = useState(false);
+    const [loadingDeportes, setLoadingDeportes] = useState(false);
     const [usuarioId, setUsuarioId] = useState<number | null>(null);
 
     useEffect(() => {
         cargarUsuarioId();
+        cargarTiposDeporte();
     }, []);
 
     const cargarUsuarioId = async () => {
@@ -44,6 +50,19 @@ export default function CrearEquipoScreen() {
         } else {
             Alert.alert('Error', 'No se pudo obtener el ID del usuario');
             router.back();
+        }
+    };
+
+    const cargarTiposDeporte = async () => {
+        setLoadingDeportes(true);
+        try {
+            const deportes = await obtenerTiposDeporte();
+            setTiposDeporte(deportes);
+        } catch (error) {
+            console.error('Error cargando tipos de deporte:', error);
+            Alert.alert('Error', 'No se pudieron cargar los tipos de deporte');
+        } finally {
+            setLoadingDeportes(false);
         }
     };
 
@@ -58,6 +77,10 @@ export default function CrearEquipoScreen() {
         }
         if (!descripcion.trim()) {
             Alert.alert('Error', 'La descripción es obligatoria');
+            return false;
+        }
+        if (!tipoDeporteId) {
+            Alert.alert('Error', 'Debes seleccionar un tipo de deporte');
             return false;
         }
 
@@ -86,7 +109,7 @@ export default function CrearEquipoScreen() {
             const nuevoEquipo = await crearEquipo({
                 nombre: nombre.trim(),
                 creadoPor: usuarioId,
-                tipoDeporteId: 1,
+                tipoDeporteId: tipoDeporteId!,
                 descripcion: descripcion.trim(),
                 colorPrincipal,
                 colorSecundario,
@@ -231,6 +254,40 @@ export default function CrearEquipoScreen() {
                             onChangeText={setNombre}
                             maxLength={50}
                         />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Tipo de Deporte *</Text>
+                        {loadingDeportes ? (
+                            <ActivityIndicator size="small" color="#2196F3" />
+                        ) : (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.deportesContainer}>
+                                {tiposDeporte.map((deporte) => (
+                                    <TouchableOpacity
+                                        key={deporte.id}
+                                        style={[
+                                            styles.deporteCard,
+                                            tipoDeporteId === deporte.id && styles.deporteCardSelected
+                                        ]}
+                                        onPress={() => setTipoDeporteId(deporte.id)}
+                                    >
+                                        <View style={styles.deporteIconContainer}>
+                                            {deporte.icono && deporte.icono.startsWith('http') ? (
+                                                <Image source={{ uri: deporte.icono }} style={styles.deporteIcon} />
+                                            ) : (
+                                                <Ionicons name="trophy-outline" size={24} color={tipoDeporteId === deporte.id ? "#FFF" : "#666"} />
+                                            )}
+                                        </View>
+                                        <Text style={[
+                                            styles.deporteName,
+                                            tipoDeporteId === deporte.id && styles.deporteNameSelected
+                                        ]}>
+                                            {deporte.nombre}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        )}
                     </View>
 
                     <View style={styles.inputGroup}>
@@ -655,6 +712,48 @@ const styles = StyleSheet.create({
         color: '#666',
     },
     nivelButtonTextSelected: {
+        color: '#2196F3',
+    },
+    // Estilos para deportes
+    deportesContainer: {
+        flexDirection: 'row',
+        marginBottom: 8,
+    },
+    deporteCard: {
+        alignItems: 'center',
+        marginRight: 12,
+        padding: 10,
+        borderRadius: 12,
+        backgroundColor: '#F9F9F9',
+        borderWidth: 2,
+        borderColor: '#E0E0E0',
+        width: 100,
+    },
+    deporteCardSelected: {
+        backgroundColor: '#E3F2FD',
+        borderColor: '#2196F3',
+    },
+    deporteIconContainer: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#EEE',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+        overflow: 'hidden',
+    },
+    deporteIcon: {
+        width: '100%',
+        height: '100%',
+    },
+    deporteName: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#666',
+        textAlign: 'center',
+    },
+    deporteNameSelected: {
         color: '#2196F3',
     },
 });
