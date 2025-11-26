@@ -1,6 +1,7 @@
 import { obtenerEquipoPorId } from '@/services/equipos.service';
 import { obtenerInvitacionesEquipo } from '@/services/invitaciones.service';
 import { obtenerMiembrosEquipo } from '@/services/miembros.service';
+import { obtenerUsuarioPorId, UsuarioPerfil } from '@/services/usuario.service';
 import { Equipo } from '@/types/equipo-types';
 import { Miembro } from '@/types/miembro-types';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,7 @@ export default function DetalleEquipoScreen() {
 
     const [equipo, setEquipo] = useState<Equipo | null>(null);
     const [miembros, setMiembros] = useState<Miembro[]>([]);
+    const [usuariosInfo, setUsuariosInfo] = useState<Record<number, UsuarioPerfil>>({});
     const [loading, setLoading] = useState(true);
     const [loadingMiembros, setLoadingMiembros] = useState(false);
     const [loadingInvitaciones, setLoadingInvitaciones] = useState(false);
@@ -65,6 +67,13 @@ export default function DetalleEquipoScreen() {
         }
     }, [miembros, usuarioActualId]);
 
+    // Efecto para cargar el perfil del creador del equipo
+    useEffect(() => {
+        if (equipo && equipo.creadoPor && !usuariosInfo[equipo.creadoPor]) {
+            cargarPerfilUsuario(equipo.creadoPor);
+        }
+    }, [equipo]);
+
     const cargarUsuarioId = async () => {
         try {
             const userId = await AsyncStorage.getItem('userId');
@@ -92,6 +101,16 @@ export default function DetalleEquipoScreen() {
         }
     };
 
+    const cargarPerfilUsuario = async (userId: number) => {
+        try {
+            console.log('Fetching info for creator:', userId);
+            const usuario = await obtenerUsuarioPorId(userId);
+            setUsuariosInfo(prev => ({ ...prev, [userId]: usuario }));
+        } catch (err) {
+            console.error(`Error fetching user ${userId}`, err);
+        }
+    };
+
     const cargarMiembros = async () => {
         if (!equipoId) return;
 
@@ -104,6 +123,36 @@ export default function DetalleEquipoScreen() {
             });
             setMiembros(response.content);
             setTotalMiembros(response.totalElements);
+
+            // Obtener información de usuarios
+            const usuariosIds = [...new Set(response.content.map(m => m.usuarioId))];
+
+            // Filtrar IDs que ya tenemos para no volver a pedirlos
+            const idsAFetch = usuariosIds.filter(id => !usuariosInfo[id]);
+
+            if (idsAFetch.length > 0) {
+                console.log('Fetching info for users:', idsAFetch);
+                const promesas = idsAFetch.map(id =>
+                    obtenerUsuarioPorId(id)
+                        .then((usuario: UsuarioPerfil) => ({ id, usuario }))
+                        .catch((err: any) => {
+                            console.error(`Error fetching user ${id}`, err);
+                            return { id, usuario: null };
+                        })
+                );
+
+                const resultados = await Promise.all(promesas);
+
+                const nuevosUsuariosInfo = { ...usuariosInfo };
+                resultados.forEach(({ id, usuario }: { id: number, usuario: UsuarioPerfil | null }) => {
+                    if (usuario) {
+                        nuevosUsuariosInfo[id] = usuario;
+                    }
+                });
+
+                setUsuariosInfo(prev => ({ ...prev, ...nuevosUsuariosInfo }));
+            }
+
         } catch (err) {
             console.error('Error cargando miembros:', err);
         } finally {
@@ -288,7 +337,11 @@ export default function DetalleEquipoScreen() {
 
                             <View style={styles.infoItem}>
                                 <Text style={styles.infoLabel}>Creado Por</Text>
-                                <Text style={styles.infoValue}>Usuario #{equipo.creadoPor}</Text>
+                                <Text style={styles.infoValue}>
+                                    {usuariosInfo[equipo.creadoPor]?.nombreCompleto ||
+                                        usuariosInfo[equipo.creadoPor]?.usuario?.email ||
+                                        `Usuario #${equipo.creadoPor}`}
+                                </Text>
                             </View>
 
                             <View style={styles.infoItem}>
@@ -361,7 +414,11 @@ export default function DetalleEquipoScreen() {
                                             </View>
                                             <View style={styles.miembroDetails}>
                                                 <View style={styles.miembroHeader}>
-                                                    <Text style={styles.miembroUsuarioId}>Usuario #{miembro.usuarioId}</Text>
+                                                    <Text style={styles.miembroUsuarioId}>
+                                                        {usuariosInfo[miembro.usuarioId]?.nombreCompleto ||
+                                                            usuariosInfo[miembro.usuarioId]?.usuario?.email ||
+                                                            'Usuario Desconocido'}
+                                                    </Text>
                                                     <View style={[
                                                         styles.rolBadge,
                                                         miembro.rol.toLowerCase() === 'capitan' && styles.rolCapitan,
