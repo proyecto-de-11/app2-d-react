@@ -1,8 +1,11 @@
 import { obtenerEquipoPorId } from '@/services/equipos.service';
+import { obtenerInvitacionesEquipo } from '@/services/invitaciones.service';
 import { obtenerMiembrosEquipo } from '@/services/miembros.service';
 import { Equipo } from '@/types/equipo-types';
+import { Invitacion } from '@/types/invitacion-types';
 import { Miembro } from '@/types/miembro-types';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -24,23 +27,56 @@ export default function DetalleEquipoScreen() {
 
     const [equipo, setEquipo] = useState<Equipo | null>(null);
     const [miembros, setMiembros] = useState<Miembro[]>([]);
+    const [invitaciones, setInvitaciones] = useState<Invitacion[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMiembros, setLoadingMiembros] = useState(false);
+    const [loadingInvitaciones, setLoadingInvitaciones] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [totalMiembros, setTotalMiembros] = useState(0);
+    const [totalInvitaciones, setTotalInvitaciones] = useState(0);
+    const [usuarioActualId, setUsuarioActualId] = useState<number | null>(null);
+    const [esMiembro, setEsMiembro] = useState(false);
 
     // Obtener equipoId de los parámetros
     const equipoId = params.equipoId ? parseInt(params.equipoId as string) : null;
 
     useEffect(() => {
-        if (equipoId) {
+        cargarUsuarioId();
+    }, []);
+
+    useEffect(() => {
+        if (equipoId && usuarioActualId) {
             cargarEquipo();
             cargarMiembros();
-        } else {
+        } else if (equipoId && !usuarioActualId) {
             setError('No se proporcionó ID del equipo');
             setLoading(false);
         }
-    }, [equipoId]);
+    }, [equipoId, usuarioActualId]);
+
+    useEffect(() => {
+        // Verificar si el usuario es miembro cuando se cargan los miembros
+        if (miembros.length > 0 && usuarioActualId) {
+            const esMiembroDelEquipo = miembros.some(m => m.usuarioId === usuarioActualId);
+            setEsMiembro(esMiembroDelEquipo);
+
+            // Si es miembro, cargar invitaciones
+            if (esMiembroDelEquipo && equipoId) {
+                cargarInvitaciones();
+            }
+        }
+    }, [miembros, usuarioActualId]);
+
+    const cargarUsuarioId = async () => {
+        try {
+            const userId = await AsyncStorage.getItem('userId');
+            if (userId) {
+                setUsuarioActualId(parseInt(userId));
+            }
+        } catch (err) {
+            console.error('Error cargando usuario ID:', err);
+        }
+    };
 
     const cargarEquipo = async () => {
         if (!equipoId) return;
@@ -74,6 +110,29 @@ export default function DetalleEquipoScreen() {
             console.error('Error cargando miembros:', err);
         } finally {
             setLoadingMiembros(false);
+        }
+    };
+
+    const cargarInvitaciones = async () => {
+        if (!equipoId) return;
+
+        try {
+            setLoadingInvitaciones(true);
+            const response = await obtenerInvitacionesEquipo(equipoId, {
+                page: 0,
+                size: 50,
+                sort: ['fechaCreacion']
+            });
+            setInvitaciones(response.content);
+            setTotalInvitaciones(response.totalElements);
+        } catch (err) {
+            console.error('Error cargando invitaciones:', err);
+            // Si hay un error 403, es porque no es miembro
+            if (err instanceof Error && err.message.includes('permisos')) {
+                setEsMiembro(false);
+            }
+        } finally {
+            setLoadingInvitaciones(false);
         }
     };
 
@@ -340,6 +399,58 @@ export default function DetalleEquipoScreen() {
                             </View>
                         )}
                     </View>
+
+                    {/* Invitaciones (solo visible para miembros) */}
+                    {esMiembro && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="mail" size={20} color="#7033FF" />
+                                <Text style={styles.sectionTitle}>
+                                    Solicitudes ({totalInvitaciones})
+                                </Text>
+                            </View>
+
+                            {loadingInvitaciones ? (
+                                <View style={styles.loadingMiembrosContainer}>
+                                    <ActivityIndicator size="small" color="#7033FF" />
+                                    <Text style={styles.loadingMiembrosText}>Cargando solicitudes...</Text>
+                                </View>
+                            ) : invitaciones.length > 0 ? (
+                                <View style={styles.invitacionesContainer}>
+                                    {invitaciones.map((invitacion) => (
+                                        <View key={invitacion.id} style={styles.invitacionItem}>
+                                            <View style={styles.invitacionHeader}>
+                                                <Text style={styles.invitacionUsuario}>
+                                                    Usuario #{invitacion.usuarioRemitenteId}
+                                                </Text>
+                                                <View style={[
+                                                    styles.estadoInvitacionBadge,
+                                                    invitacion.estado === 'PENDIENTE' && styles.estadoPendiente,
+                                                    invitacion.estado === 'ACEPTADA' && styles.estadoAceptada,
+                                                    invitacion.estado === 'RECHAZADA' && styles.estadoRechazada
+                                                ]}>
+                                                    <Text style={styles.estadoInvitacionText}>
+                                                        {invitacion.estado}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Text style={styles.invitacionMensaje} numberOfLines={2}>
+                                                {invitacion.mensaje}
+                                            </Text>
+                                            <Text style={styles.invitacionFecha}>
+                                                {new Date(invitacion.fechaCreacion).toLocaleDateString('es-ES')}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            ) : (
+                                <View style={styles.emptyMiembros}>
+                                    <Ionicons name="mail-outline" size={48} color="#D0D0D0" />
+                                    <Text style={styles.emptyMiembrosText}>No hay solicitudes pendientes</Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
 
                     {/* Botones de acción */}
                     <View style={styles.actionsContainer}>
@@ -722,5 +833,57 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#8A8A93',
         marginTop: 10,
+    },
+    // Estilos para invitaciones
+    invitacionesContainer: {
+        gap: 10,
+    },
+    invitacionItem: {
+        backgroundColor: '#FFF',
+        borderRadius: 12,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#E8E8E8',
+    },
+    invitacionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    invitacionUsuario: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1A1A1A',
+    },
+    estadoInvitacionBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    estadoPendiente: {
+        backgroundColor: '#FFF4E5',
+    },
+    estadoAceptada: {
+        backgroundColor: '#E8F5E9',
+    },
+    estadoRechazada: {
+        backgroundColor: '#FFEBEE',
+    },
+    estadoInvitacionText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#1A1A1A',
+        textTransform: 'capitalize',
+    },
+    invitacionMensaje: {
+        fontSize: 13,
+        color: '#666',
+        marginBottom: 6,
+        lineHeight: 18,
+    },
+    invitacionFecha: {
+        fontSize: 11,
+        color: '#999',
     },
 });

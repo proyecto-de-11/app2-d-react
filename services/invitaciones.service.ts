@@ -55,3 +55,65 @@ export async function enviarSolicitudUnirse(invitacionData: CrearInvitacionDTO):
         throw new Error("Ocurrió un error desconocido al enviar la solicitud.");
     }
 }
+
+/**
+ * Obtiene las invitaciones de un equipo
+ * @param equipoId - ID del equipo
+ * @param params - Parámetros de paginación (page, size, sort)
+ * @returns Promise con las invitaciones paginadas
+ */
+export async function obtenerInvitacionesEquipo(
+    equipoId: number,
+    params: { page?: number; size?: number; sort?: string[] } = { page: 0, size: 20, sort: ['id'] }
+): Promise<import('@/types/invitacion-types').InvitacionesPaginadas> {
+    const { page = 0, size = 20, sort = ['id'] } = params;
+
+    // Construir query params
+    const queryParams = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString(),
+    });
+
+    // Agregar sort params
+    sort.forEach(s => queryParams.append('sort', s));
+
+    const urlCompleta = `${INVITACIONES_BASE_URL}/api/invitaciones/equipo/${equipoId}?${queryParams.toString()}`;
+
+    console.log('📥 Obteniendo invitaciones del equipo:', equipoId);
+
+    try {
+        const token = await AsyncStorage.getItem('userToken');
+
+        if (!token) {
+            throw new Error('No se encontró token de autenticación');
+        }
+
+        const response = await axios.get<import('@/types/invitacion-types').InvitacionesPaginadas>(urlCompleta, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                accept: '*/*'
+            },
+        });
+
+        console.log('✅ Invitaciones obtenidas:', response.data.totalElements);
+        return response.data;
+
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error("❌ Error al obtener invitaciones:", {
+                status: error.response?.status,
+                message: error.message
+            });
+
+            if (error.response?.status === 401) {
+                throw new Error('No autorizado para ver las invitaciones.');
+            } else if (error.response?.status === 403) {
+                throw new Error('No tienes permisos para ver las invitaciones de este equipo.');
+            }
+
+            throw new Error(`Error al obtener invitaciones: ${error.message}`);
+        }
+        console.error("❌ Error inesperado:", error);
+        throw new Error("Ocurrió un error desconocido al obtener las invitaciones.");
+    }
+}
