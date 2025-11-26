@@ -2,7 +2,6 @@ import { obtenerEquipoPorId } from '@/services/equipos.service';
 import { obtenerInvitacionesEquipo } from '@/services/invitaciones.service';
 import { obtenerMiembrosEquipo } from '@/services/miembros.service';
 import { Equipo } from '@/types/equipo-types';
-import { Invitacion } from '@/types/invitacion-types';
 import { Miembro } from '@/types/miembro-types';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +26,6 @@ export default function DetalleEquipoScreen() {
 
     const [equipo, setEquipo] = useState<Equipo | null>(null);
     const [miembros, setMiembros] = useState<Miembro[]>([]);
-    const [invitaciones, setInvitaciones] = useState<Invitacion[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMiembros, setLoadingMiembros] = useState(false);
     const [loadingInvitaciones, setLoadingInvitaciones] = useState(false);
@@ -60,7 +58,7 @@ export default function DetalleEquipoScreen() {
             const esMiembroDelEquipo = miembros.some(m => m.usuarioId === usuarioActualId);
             setEsMiembro(esMiembroDelEquipo);
 
-            // Si es miembro, cargar invitaciones
+            // Si es miembro, cargar invitaciones (solo conteo)
             if (esMiembroDelEquipo && equipoId) {
                 cargarInvitaciones();
             }
@@ -120,10 +118,9 @@ export default function DetalleEquipoScreen() {
             setLoadingInvitaciones(true);
             const response = await obtenerInvitacionesEquipo(equipoId, {
                 page: 0,
-                size: 50,
+                size: 1,
                 sort: ['fechaCreacion']
             });
-            setInvitaciones(response.content);
             setTotalInvitaciones(response.totalElements);
         } catch (err) {
             console.error('Error cargando invitaciones:', err);
@@ -403,52 +400,26 @@ export default function DetalleEquipoScreen() {
                     {/* Invitaciones (solo visible para miembros) */}
                     {esMiembro && (
                         <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Ionicons name="mail" size={20} color="#7033FF" />
-                                <Text style={styles.sectionTitle}>
-                                    Solicitudes ({totalInvitaciones})
-                                </Text>
-                            </View>
-
-                            {loadingInvitaciones ? (
-                                <View style={styles.loadingMiembrosContainer}>
-                                    <ActivityIndicator size="small" color="#7033FF" />
-                                    <Text style={styles.loadingMiembrosText}>Cargando solicitudes...</Text>
+                            <TouchableOpacity
+                                style={styles.menuButton}
+                                onPress={() => router.push({
+                                    pathname: '/screens/SolicitudesEquipoScreen',
+                                    params: { equipoId }
+                                })}
+                            >
+                                <View style={styles.menuButtonContent}>
+                                    <View style={styles.menuIconContainer}>
+                                        <Ionicons name="mail" size={24} color="#7033FF" />
+                                    </View>
+                                    <View style={styles.menuTextContainer}>
+                                        <Text style={styles.menuTitle}>Solicitudes de Unión</Text>
+                                        <Text style={styles.menuSubtitle}>
+                                            {loadingInvitaciones ? 'Cargando...' : `${totalInvitaciones} solicitudes pendientes`}
+                                        </Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={24} color="#ccc" />
                                 </View>
-                            ) : invitaciones.length > 0 ? (
-                                <View style={styles.invitacionesContainer}>
-                                    {invitaciones.map((invitacion) => (
-                                        <View key={invitacion.id} style={styles.invitacionItem}>
-                                            <View style={styles.invitacionHeader}>
-                                                <Text style={styles.invitacionUsuario}>
-                                                    Usuario #{invitacion.usuarioRemitenteId}
-                                                </Text>
-                                                <View style={[
-                                                    styles.estadoInvitacionBadge,
-                                                    invitacion.estado === 'PENDIENTE' && styles.estadoPendiente,
-                                                    invitacion.estado === 'ACEPTADA' && styles.estadoAceptada,
-                                                    invitacion.estado === 'RECHAZADA' && styles.estadoRechazada
-                                                ]}>
-                                                    <Text style={styles.estadoInvitacionText}>
-                                                        {invitacion.estado}
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                            <Text style={styles.invitacionMensaje} numberOfLines={2}>
-                                                {invitacion.mensaje}
-                                            </Text>
-                                            <Text style={styles.invitacionFecha}>
-                                                {new Date(invitacion.fechaCreacion).toLocaleDateString('es-ES')}
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            ) : (
-                                <View style={styles.emptyMiembros}>
-                                    <Ionicons name="mail-outline" size={48} color="#D0D0D0" />
-                                    <Text style={styles.emptyMiembrosText}>No hay solicitudes pendientes</Text>
-                                </View>
-                            )}
+                            </TouchableOpacity>
                         </View>
                     )}
 
@@ -834,56 +805,43 @@ const styles = StyleSheet.create({
         color: '#8A8A93',
         marginTop: 10,
     },
-    // Estilos para invitaciones
-    invitacionesContainer: {
-        gap: 10,
-    },
-    invitacionItem: {
+    // Estilos para botón de menú
+    menuButton: {
         backgroundColor: '#FFF',
         borderRadius: 12,
-        padding: 14,
+        padding: 16,
         borderWidth: 1,
         borderColor: '#E8E8E8',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
-    invitacionHeader: {
+    menuButtonContent: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
     },
-    invitacionUsuario: {
-        fontSize: 14,
+    menuIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F0F0FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    menuTextContainer: {
+        flex: 1,
+    },
+    menuTitle: {
+        fontSize: 16,
         fontWeight: '600',
         color: '#1A1A1A',
+        marginBottom: 2,
     },
-    estadoInvitacionBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    estadoPendiente: {
-        backgroundColor: '#FFF4E5',
-    },
-    estadoAceptada: {
-        backgroundColor: '#E8F5E9',
-    },
-    estadoRechazada: {
-        backgroundColor: '#FFEBEE',
-    },
-    estadoInvitacionText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#1A1A1A',
-        textTransform: 'capitalize',
-    },
-    invitacionMensaje: {
+    menuSubtitle: {
         fontSize: 13,
-        color: '#666',
-        marginBottom: 6,
-        lineHeight: 18,
-    },
-    invitacionFecha: {
-        fontSize: 11,
-        color: '#999',
+        color: '#8A8A93',
     },
 });
