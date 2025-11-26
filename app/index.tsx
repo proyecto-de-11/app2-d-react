@@ -1,6 +1,23 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useState, useCallback } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  ScrollView,
+  ActivityIndicator,
+  StatusBar,
+  Modal,
+  TouchableWithoutFeedback,
+  ImageBackground,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ======================================================================================
 // HOME SCREEN API FIX (BASE64 IMAGES)
@@ -9,7 +26,6 @@ import axios, { AxiosError } from 'axios';
 // - Creates a `data:image/jpeg;base64,` URI if an image is present.
 // - Includes a fallback to a placeholder image if `imagenes` is null.
 // ======================================================================================
-
 
 interface UserData {
   nombreCompleto: string;
@@ -26,6 +42,13 @@ interface Cancha {
   imagenes: string | null; // This field will contain the Base64 string
 }
 
+interface Publicacion {
+    id: number;
+    titulo: string;
+    descripcion: string;
+    imagen: string;
+}
+
 // 2. Update the reusable component to handle Base64 images
 const PopularCourtCard: React.FC<{ court: Cancha }> = ({ court }) => {
   const imageSource = court.imagenes
@@ -34,21 +57,26 @@ const PopularCourtCard: React.FC<{ court: Cancha }> = ({ court }) => {
 
   return (
     <TouchableOpacity style={styles.popularCourtCard}>
-      <Image 
-        source={imageSource}
-        style={styles.popularCourtImage}
-      />
+      <Image source={imageSource} style={styles.popularCourtImage} />
       <View style={styles.popularCourtInfo}>
-          <Text style={styles.popularCourtTitle} numberOfLines={1}>{court.nombre}</Text>
-          <Text style={styles.popularCourtLocation} numberOfLines={1}>{court.ubicacion}</Text>
-          <View style={styles.popularCourtRating}>
-              <Ionicons name="star" size={16} color="#FFC700"/>
-              <Text style={styles.popularCourtRatingText}>{parseFloat(court.calificacion_promedio).toFixed(1)}</Text>
-          </View>
-      </View>
-        <View style={styles.popularCourtPriceContainer}>
-          <Text style={styles.popularCourtPrice}>${parseFloat(court.precio_hora).toFixed(2)}/hr</Text>
+        <Text style={styles.popularCourtTitle} numberOfLines={1}>
+          {court.nombre}
+        </Text>
+        <Text style={styles.popularCourtLocation} numberOfLines={1}>
+          {court.ubicacion}
+        </Text>
+        <View style={styles.popularCourtRating}>
+          <Ionicons name="star" size={16} color="#FFC700" />
+          <Text style={styles.popularCourtRatingText}>
+            {parseFloat(court.calificacion_promedio).toFixed(1)}
+          </Text>
         </View>
+      </View>
+      <View style={styles.popularCourtPriceContainer}>
+        <Text style={styles.popularCourtPrice}>
+          ${parseFloat(court.precio_hora).toFixed(2)}/hr
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -61,6 +89,8 @@ const HomeScreen = () => {
   const [isProfileModalVisible, setProfileModalVisible] = useState(false);
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
   const [loadingPublicaciones, setLoadingPublicaciones] = useState(false);
+    const [canchas, setCanchas] = useState<Cancha[]>([]);
+    const [canchasLoading, setCanchasLoading] = useState(false);
 
   const fetchUserData = async () => {
     setLoading(true);
@@ -91,7 +121,9 @@ const HomeScreen = () => {
   const fetchPublicaciones = async () => {
     setLoadingPublicaciones(true);
     try {
-      const response = await axios.get('https://api-empresa-publicidad.onrender.com/publicacion');
+      const response = await axios.get(
+        'https://api-empresa-publicidad.onrender.com/publicacion'
+      );
       setPublicaciones(response.data);
     } catch (err) {
       console.error('Error al obtener publicaciones:', err);
@@ -117,12 +149,12 @@ const HomeScreen = () => {
   );
 
   // 3. Create the navigation handler function
-  const handleCourtPress = (courtId: number) => {
-    router.push({ 
-        pathname: '/screens/CreateReservationScreen', 
-        params: { id: courtId }
+  /*const handleCourtPress = (courtId: number) => {
+    router.push({
+      pathname: '/screens/CreateReservationScreen',
+      params: { id: courtId },
     });
-  };
+  };*/
 
   const handleLogout = async () => {
     setMenuVisible(false);
@@ -140,27 +172,41 @@ const HomeScreen = () => {
     router.push('/screens/CreateProfileScreen');
   };
 
-  const firstName = userData?.nombreCompleto ? userData.nombreCompleto.split(' ')[0] : 'Usuario';
+  const firstName = userData?.nombreCompleto
+    ? userData.nombreCompleto.split(' ')[0]
+    : 'Usuario';
 
   const renderCategory = (icon: any, name: string) => (
-    <TouchableOpacity style={styles.categoryCard}>
+    <TouchableOpacity key={name} style={styles.categoryCard}>
       <View style={styles.categoryIconContainer}>
         <MaterialCommunityIcons name={icon} size={28} color="#7033FF" />
       </View>
       <Text style={styles.categoryText}>{name}</Text>
     </TouchableOpacity>
   );
-  
+
   const renderPopularCourts = () => {
     if (canchasLoading) {
-      return <ActivityIndicator size="large" color="#7033FF" style={{marginTop: 20}}/>;
+      return (
+        <ActivityIndicator
+          size="large"
+          color="#7033FF"
+          style={{ marginTop: 20 }}
+        />
+      );
     }
 
     if (canchas.length === 0) {
-      return <Text style={styles.noCourtsText}>No hay canchas populares disponibles en este momento.</Text>;
+      return (
+        <Text style={styles.noCourtsText}>
+          No hay canchas populares disponibles en este momento.
+        </Text>
+      );
     }
 
-    return canchas.map(court => <PopularCourtCard key={court.id} court={court} />);
+    return canchas.map((court) => (
+      <PopularCourtCard key={court.id} court={court} />
+    ));
   };
 
   return (
@@ -176,18 +222,27 @@ const HomeScreen = () => {
           <View>
             <Text style={styles.welcomeSubtitle}>Bienvenido,</Text>
             {loading ? (
-              <ActivityIndicator color="#1A1A1A" style={{ alignSelf: 'flex-start' }} />
+              <ActivityIndicator
+                color="#1A1A1A"
+                style={{ alignSelf: 'flex-start' }}
+              />
             ) : (
               <Text style={styles.welcomeTitle}>{firstName}</Text>
             )}
           </View>
-          <TouchableOpacity style={styles.profileButton} onPress={() => setMenuVisible(true)}>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => setMenuVisible(true)}
+          >
             {loading || !userData?.fotoPerfil ? (
               <View style={styles.profileIconPlaceholder}>
                 <Feather name="user" size={28} color="#7033FF" />
               </View>
             ) : (
-              <Image source={{ uri: userData.fotoPerfil }} style={styles.profileImage} />
+              <Image
+                source={{ uri: userData.fotoPerfil }}
+                style={styles.profileImage}
+              />
             )}
           </TouchableOpacity>
         </View>
@@ -220,13 +275,31 @@ const HomeScreen = () => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Promociones</Text>
           {loadingPublicaciones ? (
-            <ActivityIndicator color="#1A1A1A" style={{ alignSelf: 'center' }} />
+            <ActivityIndicator
+              color="#1A1A1A"
+              style={{ alignSelf: 'center' }}
+            />
           ) : publicaciones.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScrollContainer}>
-              {publicaciones.map((pub) => (
-                <TouchableOpacity key={pub.id} style={styles.promoCard} onPress={() => console.log('Promo pressed', pub.id)}>
-                  <ImageBackground source={{ uri: pub.imagen }} style={styles.promoBackground} imageStyle={{ borderRadius: 20 }}>
-                    <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.promoOverlay}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContainer}
+            >
+              {publicaciones.map((pub, index) => (
+                <TouchableOpacity
+                  key={`${pub.id}-${index}`}
+                  style={styles.promoCard}
+                  onPress={() => console.log('Promo pressed', pub.id)}
+                >
+                  <ImageBackground
+                    source={{ uri: pub.imagen }}
+                    style={styles.promoBackground}
+                    imageStyle={{ borderRadius: 20 }}
+                  >
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.8)']}
+                      style={styles.promoOverlay}
+                    >
                       <Text style={styles.promoText}>{pub.titulo}</Text>
                       <Text style={styles.promoSubText}>{pub.descripcion}</Text>
                     </LinearGradient>
@@ -235,27 +308,16 @@ const HomeScreen = () => {
               ))}
             </ScrollView>
           ) : (
-            <Text style={{ textAlign: 'center', color: '#8A8A93' }}>No hay promociones disponibles.</Text>
+            <Text style={{ textAlign: 'center', color: '#8A8A93' }}>
+              No hay promociones disponibles.
+            </Text>
           )}
         </View>
 
         {/* Popular Courts */}
         <View style={[styles.sectionContainer, { marginBottom: 100 }]}>
           <Text style={styles.sectionTitle}>Canchas Populares</Text>
-          <TouchableOpacity style={styles.popularCourtCard}>
-            <Image source={{ uri: 'https://i.pinimg.com/564x/e7/6e/8f/e76e8f62c2357a78a63af5c256a42a19.jpg' }} style={styles.popularCourtImage} />
-            <View style={styles.popularCourtInfo}>
-              <Text style={styles.popularCourtTitle}>El Campín</Text>
-              <Text style={styles.popularCourtLocation}>Av. Ficticia 123, Ciudad</Text>
-              <View style={styles.popularCourtRating}>
-                <Ionicons name="star" size={16} color="#FFC700" />
-                <Text style={styles.popularCourtRatingText}>4.8</Text>
-              </View>
-            </View>
-            <View style={styles.popularCourtPriceContainer}>
-              <Text style={styles.popularCourtPrice}>$50/hr</Text>
-            </View>
-          </TouchableOpacity>
+          {renderPopularCourts()}
         </View>
       </ScrollView>
 
@@ -265,42 +327,78 @@ const HomeScreen = () => {
           <TouchableOpacity style={styles.navItem}>
             <Ionicons name="home" size={26} color={'#7033FF'} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./screens/PublicProfilesScreen')}>
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => router.push('./screens/PublicProfilesScreen')}
+          >
             <Ionicons name="compass-outline" size={28} color="#8A8A93" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./screens/MyChatsScreen')}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color="#8A8A93" />
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => router.push('./screens/MyChatsScreen')}
+          >
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={26}
+              color="#8A8A93"
+            />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Modals */}
-      <Modal visible={isProfileModalVisible} transparent={true} animationType="fade" onRequestClose={() => { }}>
+      <Modal
+        visible={isProfileModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
         <View style={styles.profileModalOverlay}>
           <View style={styles.modalContentContainer}>
             <Feather name="info" size={40} color="#fff" />
             <Text style={styles.modalTitle}>¡Completa tu perfil!</Text>
-            <Text style={styles.modalText}>Para disfrutar de todas las funcionalidades, por favor, crea tu perfil de usuario.</Text>
+            <Text style={styles.modalText}>
+              Para disfrutar de todas las funcionalidades, por favor, crea tu
+              perfil de usuario.
+            </Text>
             <TouchableOpacity onPress={navigateToCreateProfile}>
-              <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.modalButton} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}>
+              <LinearGradient
+                colors={['#7033FF', '#B34CFF']}
+                style={styles.modalButton}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+              >
                 <Text style={styles.modalButtonText}>Crear Perfil</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-      <Modal transparent={true} visible={menuVisible} onRequestClose={() => setMenuVisible(false)} animationType="fade">
+      <Modal
+        transparent={true}
+        visible={menuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+        animationType="fade"
+      >
         <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.menuContainer}>
-              <TouchableOpacity style={styles.menuOption} onPress={navigateToProfile}>
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={navigateToProfile}
+              >
                 <Feather name="user" size={20} color="#1A1A1A" />
                 <Text style={styles.menuText}>Ver mi perfil</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
-              <TouchableOpacity style={styles.menuOption} onPress={handleLogout}>
+              <TouchableOpacity
+                style={styles.menuOption}
+                onPress={handleLogout}
+              >
                 <Feather name="log-out" size={20} color="#E74C3C" />
-                <Text style={[styles.menuText, { color: '#E74C3C' }]}>Cerrar Sesión</Text>
+                <Text style={[styles.menuText, { color: '#E74C3C' }]}>
+                  Cerrar Sesión
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -355,7 +453,13 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginBottom: 20,
   },
-  searchInput: { flex: 1, fontSize: 16, color: '#1A1A1A', marginLeft: 10, fontWeight: '500' },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1A1A1A',
+    marginLeft: 10,
+    fontWeight: '500',
+  },
   filterButton: {
     width: 45,
     height: 45,
@@ -366,7 +470,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   sectionContainer: { marginTop: 15 },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 20, paddingHorizontal: 20 },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -397,7 +507,11 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   categoryText: { fontSize: 14, color: '#1A1A1A', fontWeight: '600' },
-  horizontalScrollContainer: { paddingHorizontal: 20, paddingBottom: 10, gap: 15 },
+  horizontalScrollContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    gap: 15,
+  },
   promoCard: {
     width: 280,
     height: 160,
@@ -416,7 +530,12 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 20,
   },
-  promoText: { fontSize: 18, color: '#fff', fontWeight: 'bold', marginBottom: 5 },
+  promoText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
   promoSubText: { fontSize: 14, color: '#E0E0E0', fontWeight: '500' },
   popularCourtCard: {
     marginHorizontal: 20,
@@ -432,12 +551,26 @@ const styles = StyleSheet.create({
     elevation: 5,
     marginBottom: 15, // Added margin for spacing between cards
   },
-  popularCourtImage: { width: 80, height: 80, borderRadius: 14, backgroundColor: '#f0f0f0' }, // Added a bg color for placeholder
+  popularCourtImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 14,
+    backgroundColor: '#f0f0f0',
+  }, // Added a bg color for placeholder
   popularCourtInfo: { flex: 1, marginLeft: 15, justifyContent: 'center' },
-  popularCourtTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 5 },
+  popularCourtTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 5,
+  },
   popularCourtLocation: { fontSize: 14, color: '#8A8A93', marginBottom: 8 },
   popularCourtRating: { flexDirection: 'row', alignItems: 'center' },
-  popularCourtRatingText: { marginLeft: 5, color: '#1A1A1A', fontWeight: '600' },
+  popularCourtRatingText: {
+    marginLeft: 5,
+    color: '#1A1A1A',
+    fontWeight: '600',
+  },
   popularCourtPriceContainer: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -468,17 +601,76 @@ const styles = StyleSheet.create({
   },
   navItem: { alignItems: 'center', padding: 5 },
   // Modal styles
-  profileModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContentContainer: { width: '100%', maxWidth: 360, backgroundColor: '#1F222A', borderRadius: 25, padding: 30, alignItems: 'center' },
-  modalTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 15, color: '#fff', textAlign: 'center' },
-  modalText: { fontSize: 16, textAlign: 'center', marginBottom: 30, color: '#C7C7CD', lineHeight: 24 },
-  modalButton: { borderRadius: 16, paddingVertical: 18, width: '100%', alignItems: 'center', elevation: 2 },
+  profileModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContentContainer: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#1F222A',
+    borderRadius: 25,
+    padding: 30,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#fff',
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#C7C7CD',
+    lineHeight: 24,
+  },
+  modalButton: {
+    borderRadius: 16,
+    paddingVertical: 18,
+    width: '100%',
+    alignItems: 'center',
+    elevation: 2,
+  },
   modalButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  menuContainer: { position: 'absolute', top: 100, right: 20, backgroundColor: 'white', borderRadius: 16, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 15, elevation: 10, width: 200 },
-  menuOption: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12 },
-  menuText: { marginLeft: 12, fontSize: 16, fontWeight: '500', color: '#1A1A1A' },
+  menuContainer: {
+    position: 'absolute',
+    top: 100,
+    right: 20,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 10,
+    width: 200,
+  },
+  menuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+  },
+  menuText: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1A1A1A',
+  },
   menuDivider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 4 },
+  noCourtsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#8A8A93',
+  }
 });
 
 export default HomeScreen;
