@@ -1,13 +1,16 @@
-import { obtenerInvitacionesEquipo } from '@/services/invitaciones.service';
+import { obtenerInvitacionesEquipo, responderInvitacion } from '@/services/invitaciones.service';
 import { Invitacion } from '@/types/invitacion-types';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     RefreshControl,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -16,24 +19,48 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+type FiltroEstado = 'TODAS' | 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA';
+
 export default function SolicitudesEquipoScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const equipoId = params.equipoId ? parseInt(params.equipoId as string) : null;
 
     const [invitaciones, setInvitaciones] = useState<Invitacion[]>([]);
+    const [invitacionesFiltradas, setInvitacionesFiltradas] = useState<Invitacion[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [totalElements, setTotalElements] = useState(0);
+    const [usuarioActualId, setUsuarioActualId] = useState<number | null>(null);
+    const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('PENDIENTE');
+
+    useEffect(() => {
+        cargarUsuarioId();
+    }, []);
 
     useEffect(() => {
         if (equipoId) {
             cargarInvitaciones(0, true);
         }
     }, [equipoId]);
+
+    useEffect(() => {
+        filtrarInvitaciones();
+    }, [invitaciones, filtroEstado]);
+
+    const cargarUsuarioId = async () => {
+        try {
+            const userId = await AsyncStorage.getItem('userId');
+            if (userId) {
+                setUsuarioActualId(parseInt(userId));
+            }
+        } catch (err) {
+            console.error('Error cargando usuario ID:', err);
+        }
+    };
 
     const cargarInvitaciones = async (pageNumber: number, shouldRefresh: boolean = false) => {
         if (!equipoId) return;
@@ -44,8 +71,8 @@ export default function SolicitudesEquipoScreen() {
 
             const response = await obtenerInvitacionesEquipo(equipoId, {
                 page: pageNumber,
-                size: 20,
-                sort: ['fechaCreacion,desc'] // Ordenar por fecha descendente
+                size: 50, // Traemos más para poder filtrar en cliente mejor
+                sort: ['fechaCreacion,desc']
             });
 
             if (shouldRefresh) {
@@ -67,6 +94,14 @@ export default function SolicitudesEquipoScreen() {
         }
     };
 
+    const filtrarInvitaciones = () => {
+        if (filtroEstado === 'TODAS') {
+            setInvitacionesFiltradas(invitaciones);
+        } else {
+            setInvitacionesFiltradas(invitaciones.filter(inv => inv.estado === filtroEstado));
+        }
+    };
+
     const handleRefresh = () => {
         setRefreshing(true);
         cargarInvitaciones(0, true);
@@ -77,6 +112,76 @@ export default function SolicitudesEquipoScreen() {
             cargarInvitaciones(page + 1);
         }
     };
+
+    const handleResponderInvitacion = async (invitacionId: number, nuevoEstado: 'ACEPTADA' | 'RECHAZADA') => {
+        if (!usuarioActualId) {
+            Alert.alert('Error', 'No se pudo identificar al usuario actual');
+            return;
+        }
+
+        try {
+            Alert.alert(
+                'Confirmar acción',
+                `¿Estás seguro de que quieres ${nuevoEstado === 'ACEPTADA' ? 'aceptar' : 'rechazar'} esta solicitud?`,
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Confirmar',
+                        style: nuevoEstado === 'RECHAZADA' ? 'destructive' : 'default',
+                        onPress: async () => {
+                            setLoading(true);
+                            await responderInvitacion({
+                                id: invitacionId,
+                                nuevoEstado,
+                                usuarioRespondioId: usuarioActualId
+                            });
+
+                            // Actualizar lista localmente
+                            setInvitaciones(prev => prev.map(inv =>
+                                inv.id === invitacionId
+                                    ? { ...inv, estado: nuevoEstado, usuarioRespondioId: usuarioActualId }
+                                    : inv
+                            ));
+
+                            Alert.alert('Éxito', `Solicitud ${nuevoEstado === 'ACEPTADA' ? 'aceptada' : 'rechazada'} correctamente`);
+                            setLoading(false);
+                        }
+                    }
+                ]
+            );
+        } catch (error) {
+            console.error('Error al responder invitación:', error);
+            Alert.alert('Error', error instanceof Error ? error.message : 'Ocurrió un error al procesar la solicitud');
+            setLoading(false);
+        }
+    };
+
+    const renderFiltro = () => (
+        <View style={styles.filtroContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtroScroll}>
+                {(['PENDIENTE', 'ACEPTADA', 'RECHAZADA', 'TODAS'] as FiltroEstado[]).map((estado) => (
+                    <TouchableOpacity
+                        key={estado}
+                        style={[
+                            styles.filtroButton,
+                            filtroEstado === estado && styles.filtroButtonActive,
+                            estado === 'PENDIENTE' && filtroEstado === estado && styles.filtroPendiente,
+                            estado === 'ACEPTADA' && filtroEstado === estado && styles.filtroAceptada,
+                            estado === 'RECHAZADA' && filtroEstado === estado && styles.filtroRechazada,
+                        ]}
+                        onPress={() => setFiltroEstado(estado)}
+                    >
+                        <Text style={[
+                            styles.filtroText,
+                            filtroEstado === estado && styles.filtroTextActive
+                        ]}>
+                            {estado}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+    );
 
     const renderInvitacionItem = ({ item }: { item: Invitacion }) => (
         <View style={styles.invitacionCard}>
@@ -118,10 +223,16 @@ export default function SolicitudesEquipoScreen() {
 
             {item.estado === 'PENDIENTE' && (
                 <View style={styles.actionsContainer}>
-                    <TouchableOpacity style={[styles.actionButton, styles.rejectButton]}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.rejectButton]}
+                        onPress={() => handleResponderInvitacion(item.id, 'RECHAZADA')}
+                    >
                         <Text style={styles.rejectButtonText}>Rechazar</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionButton, styles.acceptButton]}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.acceptButton]}
+                        onPress={() => handleResponderInvitacion(item.id, 'ACEPTADA')}
+                    >
                         <LinearGradient
                             colors={['#7033FF', '#B34CFF']}
                             style={styles.gradientButton}
@@ -148,13 +259,15 @@ export default function SolicitudesEquipoScreen() {
                 <View style={styles.headerRight} />
             </View>
 
+            {renderFiltro()}
+
             {loading && !refreshing ? (
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color="#7033FF" />
                 </View>
             ) : (
                 <FlatList
-                    data={invitaciones}
+                    data={invitacionesFiltradas}
                     renderItem={renderInvitacionItem}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={styles.listContent}
@@ -167,7 +280,11 @@ export default function SolicitudesEquipoScreen() {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Ionicons name="mail-open-outline" size={64} color="#ccc" />
-                            <Text style={styles.emptyText}>No hay solicitudes pendientes</Text>
+                            <Text style={styles.emptyText}>
+                                {filtroEstado === 'TODAS'
+                                    ? 'No hay solicitudes'
+                                    : `No hay solicitudes ${filtroEstado.toLowerCase()}s`}
+                            </Text>
                         </View>
                     }
                 />
@@ -330,5 +447,44 @@ const styles = StyleSheet.create({
         marginTop: 16,
         fontSize: 16,
         color: '#999',
+    },
+    // Estilos para filtros
+    filtroContainer: {
+        backgroundColor: '#fff',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    filtroScroll: {
+        paddingHorizontal: 16,
+        gap: 8,
+    },
+    filtroButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#f0f0f0',
+        marginRight: 8,
+    },
+    filtroButtonActive: {
+        backgroundColor: '#333',
+    },
+    filtroPendiente: {
+        backgroundColor: '#FFF4E5',
+    },
+    filtroAceptada: {
+        backgroundColor: '#E8F5E9',
+    },
+    filtroRechazada: {
+        backgroundColor: '#FFEBEE',
+    },
+    filtroText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#666',
+        textTransform: 'capitalize',
+    },
+    filtroTextActive: {
+        color: '#fff',
     },
 });

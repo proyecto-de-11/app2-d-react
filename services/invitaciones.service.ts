@@ -1,4 +1,4 @@
-import type { CrearInvitacionDTO, Invitacion } from '@/types/invitacion-types';
+import type { CrearInvitacionDTO, Invitacion, ResponderInvitacionDTO } from '@/types/invitacion-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
@@ -115,5 +115,56 @@ export async function obtenerInvitacionesEquipo(
         }
         console.error("❌ Error inesperado:", error);
         throw new Error("Ocurrió un error desconocido al obtener las invitaciones.");
+    }
+}
+
+/**
+ * Responde a una invitación (Aceptar/Rechazar)
+ * @param respuestaData - Datos de la respuesta
+ * @returns Promise con la invitación actualizada
+ */
+export async function responderInvitacion(respuestaData: ResponderInvitacionDTO): Promise<Invitacion> {
+    const urlCompleta = `${INVITACIONES_BASE_URL}/api/invitaciones/${respuestaData.id}/respuesta`;
+
+    console.log(`📨 Respondiendo invitación ${respuestaData.id} con estado: ${respuestaData.nuevoEstado}`);
+
+    try {
+        const token = await AsyncStorage.getItem('userToken');
+
+        if (!token) {
+            throw new Error('No se encontró token de autenticación');
+        }
+
+        const response = await axios.put<Invitacion>(urlCompleta, respuestaData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                accept: '*/*'
+            },
+        });
+
+        console.log('✅ Invitación respondida exitosamente:', response.data.id);
+        return response.data;
+
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error("❌ Error al responder invitación:", {
+                status: error.response?.status,
+                message: error.message,
+                data: error.response?.data
+            });
+
+            if (error.response?.status === 401) {
+                throw new Error('No autorizado. Por favor, inicia sesión nuevamente.');
+            } else if (error.response?.status === 403) {
+                throw new Error('No tienes permisos para responder esta invitación.');
+            } else if (error.response?.status === 404) {
+                throw new Error('Invitación no encontrada.');
+            }
+
+            throw new Error(`Error al responder invitación: ${error.message}`);
+        }
+        console.error("❌ Error inesperado:", error);
+        throw new Error("Ocurrió un error desconocido al responder la invitación.");
     }
 }
