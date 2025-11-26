@@ -142,8 +142,11 @@ export default function CrearEquipoScreen() {
                 `El equipo "${nuevoEquipo.nombre}" ha sido creado exitosamente`,
                 [
                     {
-                        text: 'OK',
-                        onPress: () => router.back(),
+                        text: 'Ver Equipo',
+                        onPress: () => router.push({
+                            pathname: '/screens/DetalleEquipoScreen',
+                            params: { equipoId: nuevoEquipo.id.toString() }
+                        }),
                     },
                 ]
             );

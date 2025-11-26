@@ -1,6 +1,7 @@
 import { obtenerMisEquipos, obtenerUsuarioId } from '@/services/equipos.service';
 import { Equipo } from '@/types/equipo-types';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -37,6 +38,15 @@ export default function MisEquiposScreen() {
             cargarEquipos();
         }
     }, [usuarioId]);
+
+    // Recargar equipos cuando la pantalla vuelva a tener foco
+    useFocusEffect(
+        useCallback(() => {
+            if (usuarioId !== null) {
+                cargarEquipos(0, false);
+            }
+        }, [usuarioId])
+    );
 
     const cargarUsuarioId = async () => {
         try {
