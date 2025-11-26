@@ -88,10 +88,7 @@ export default function MisEquiposScreen() {
     }, [usuarioId]);
 
     const handleEquipoPress = (equipo: Equipo) => {
-        router.push({
-            pathname: '/screens/DetalleEquipoScreen',
-            params: { equipo: JSON.stringify(equipo) }
-        });
+        router.push(`/screens/DetalleEquipoScreen?equipoId=${equipo.id}`);
     };
 
     const cargarMasEquipos = () => {
@@ -196,6 +193,13 @@ export default function MisEquiposScreen() {
             <Ionicons name="shield-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>No tienes equipos registrados</Text>
             <Text style={styles.emptySubtext}>¡Crea tu primer equipo para empezar!</Text>
+            <TouchableOpacity
+                style={styles.searchTeamsButton}
+                onPress={() => router.push('/screens/BuscarEquiposScreen')}
+            >
+                <Ionicons name="search" size={20} color="#7033FF" />
+                <Text style={styles.searchTeamsButtonText}>Buscar equipos</Text>
+            </TouchableOpacity>
         </View>
     );
 
@@ -212,13 +216,24 @@ export default function MisEquiposScreen() {
         <SafeAreaView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.title}>Mis Equipos</Text>
-                <Text style={styles.subtitle}>
-                    {equipos.length > 0
-                        ? `${equipos.length} equipo${equipos.length !== 1 ? 's' : ''} encontrado${equipos.length !== 1 ? 's' : ''}`
-                        : 'Sin equipos'}
-                </Text>
+                <View style={styles.headerContent}>
+                    <View>
+                        <Text style={styles.title}>Mis Equipos</Text>
+                        <Text style={styles.subtitle}>
+                            {equipos.length > 0
+                                ? `${equipos.length} equipo${equipos.length !== 1 ? 's' : ''} encontrado${equipos.length !== 1 ? 's' : ''}`
+                                : 'Sin equipos'}
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.searchButton}
+                        onPress={() => router.push('/screens/BuscarEquiposScreen')}
+                    >
+                        <Ionicons name="search" size={24} color="#7033FF" />
+                    </TouchableOpacity>
+                </View>
             </View>
+
 
             {/* Lista de equipos */}
             <FlatList
@@ -267,6 +282,24 @@ const styles = StyleSheet.create({
         padding: 20,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
+    },
+    headerContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    searchButton: {
+        width: 50,
+        height: 50,
+        borderRadius: 14,
+        backgroundColor: '#F7F3FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 3,
     },
     title: {
         fontSize: 28,
@@ -397,6 +430,27 @@ const styles = StyleSheet.create({
 
             '#bbb',
         marginTop: 8,
+        marginBottom: 20,
+    },
+    searchTeamsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F7F3FF',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 14,
+        marginTop: 10,
+        gap: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    searchTeamsButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#7033FF',
     },
     fab: {
         position: 'absolute',

@@ -5,7 +5,7 @@ import axios, { AxiosError } from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, Modal, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { ActivityIndicator, Image, ImageBackground, Modal, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 interface UserData {
   nombreCompleto: string;
@@ -114,17 +114,18 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.searchContainer}>
+        <TouchableOpacity
+          style={styles.searchContainer}
+          onPress={() => router.push('./screens/BuscarEquiposScreen')}
+          activeOpacity={0.7}
+        >
           <Feather name="search" size={22} color="#8A8A93" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar..."
-            placeholderTextColor="#8A8A93"
-          />
+          <Text style={styles.searchInputPlaceholder}>Buscar equipos...</Text>
           <TouchableOpacity style={styles.filterButton}>
             <Ionicons name="options-outline" size={24} color="#fff" />
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
+
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Categorías</Text>
@@ -279,6 +280,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   searchInput: { flex: 1, fontSize: 16, color: '#1A1A1A', marginLeft: 10, fontWeight: '500' },
+  searchInputPlaceholder: { flex: 1, fontSize: 16, color: '#8A8A93', marginLeft: 10, fontWeight: '500' },
   filterButton: {
     width: 45,
     height: 45,

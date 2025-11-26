@@ -1,9 +1,11 @@
+import { obtenerEquipoPorId } from '@/services/equipos.service';
 import { Equipo } from '@/types/equipo-types';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Image,
     ScrollView,
     StatusBar,
@@ -18,14 +20,54 @@ export default function DetalleEquipoScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
 
-    // Parsear el equipo desde los parámetros
-    const equipo: Equipo = params.equipo ? JSON.parse(params.equipo as string) : null;
+    const [equipo, setEquipo] = useState<Equipo | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    if (!equipo) {
+    // Obtener equipoId de los parámetros
+    const equipoId = params.equipoId ? parseInt(params.equipoId as string) : null;
+
+    useEffect(() => {
+        if (equipoId) {
+            cargarEquipo();
+        } else {
+            setError('No se proporcionó ID del equipo');
+            setLoading(false);
+        }
+    }, [equipoId]);
+
+    const cargarEquipo = async () => {
+        if (!equipoId) return;
+
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await obtenerEquipoPorId(equipoId);
+            setEquipo(data);
+        } catch (err) {
+            console.error('Error cargando equipo:', err);
+            setError(err instanceof Error ? err.message : 'Error al cargar el equipo');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#7033FF" />
+                <Text style={styles.loadingText}>Cargando equipo...</Text>
+            </SafeAreaView>
+        );
+    }
+
+    if (error || !equipo) {
         return (
             <SafeAreaView style={styles.errorContainer}>
                 <Ionicons name="alert-circle-outline" size={64} color="#999" />
-                <Text style={styles.errorText}>No se encontró información del equipo</Text>
+                <Text style={styles.errorText}>
+                    {error || 'No se encontró información del equipo'}
+                </Text>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Text style={styles.backButtonText}>Volver</Text>
                 </TouchableOpacity>
@@ -240,6 +282,18 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F4F2FB',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F4F2FB',
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: '#666',
+        fontWeight: '500',
     },
     errorContainer: {
         flex: 1,

@@ -180,3 +180,98 @@ export async function registrarMiembro(miembroData: CrearMiembroDTO): Promise<an
         throw new Error("Ocurrió un error desconocido al registrar el miembro.");
     }
 }
+
+/**
+ * Obtiene un equipo por su ID
+ * @param equipoId - ID del equipo
+ * @returns Promise con los datos del equipo
+ */
+export async function obtenerEquipoPorId(equipoId: number): Promise<Equipo> {
+    const urlCompleta = `${EQUIPOS_BASE_URL}/api/equipos/${equipoId}`;
+
+    console.log('🔍 Obteniendo equipo por ID:', equipoId);
+
+    try {
+        const token = await AsyncStorage.getItem('userToken');
+
+        const response = await axios.get<Equipo>(urlCompleta, {
+            headers: {
+                Authorization: token ? `Bearer ${token}` : '',
+                accept: '*/*'
+            },
+        });
+
+        console.log('✅ Equipo obtenido:', response.data.nombre);
+        return response.data;
+
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error("❌ Error al obtener equipo:", {
+                status: error.response?.status,
+                message: error.message
+            });
+
+            if (error.response?.status === 404) {
+                throw new Error('Equipo no encontrado');
+            }
+
+            throw new Error(`Fallo al obtener equipo: ${error.message}`);
+        }
+        console.error("❌ Error inesperado:", error);
+        throw new Error("Ocurrió un error desconocido al obtener el equipo.");
+    }
+}
+
+/**
+ * Busca equipos con paginación y filtro opcional de búsqueda
+ * @param params - Parámetros de paginación y búsqueda
+ * @returns Promise con la respuesta paginada de equipos
+ */
+export async function buscarEquipos(
+    params: EquiposParams & { busqueda?: string } = { page: 0, size: 10, sort: ['id'] }
+): Promise<EquiposPaginados> {
+    const { page = 0, size = 10, sort = ['id'], busqueda } = params;
+
+    // Construir query params
+    const queryParams = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString(),
+    });
+
+    // Agregar sort params (pueden ser múltiples)
+    sort.forEach(s => queryParams.append('sort', s));
+
+    // Agregar búsqueda si existe
+    if (busqueda && busqueda.trim()) {
+        queryParams.append('busqueda', busqueda.trim());
+    }
+
+    const urlCompleta = `${EQUIPOS_BASE_URL}/api/equipos?${queryParams.toString()}`;
+
+    console.log('🔍 Buscando equipos:', urlCompleta);
+
+    try {
+        const token = await AsyncStorage.getItem('userToken');
+
+        const response = await axios.get<EquiposPaginados>(urlCompleta, {
+            headers: {
+                Authorization: token ? `Bearer ${token}` : '',
+                accept: '*/*'
+            },
+        });
+
+        console.log('✅ Equipos encontrados:', response.data.totalElements);
+        return response.data;
+
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error("❌ Error al buscar equipos:", {
+                status: error.response?.status,
+                message: error.message
+            });
+            throw new Error(`Fallo en la búsqueda: ${error.message}`);
+        }
+        console.error("❌ Error inesperado al buscar:", error);
+        throw new Error("Ocurrió un error desconocido al buscar equipos.");
+    }
+}
