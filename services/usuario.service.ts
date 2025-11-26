@@ -4,7 +4,7 @@ import axios from 'axios';
 const USUARIOS_BASE_URL = 'https://apiautentificacion.onrender.com';
 
 // Token temporal proporcionado
-const TEMP_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOSVNUUkFET1IiXSwidXNlcklkIjoxLCJlbWFpbCI6ImZyYW5BZG1pbjFAZ21haWwuY29tIiwic3ViIjoiZnJhbkFkbWluMUBnbWFpbC5jb20iLCJpYXQiOjE3NjQxNjgzNzksImV4cCI6MTc2NDI1NDc3OX0.8a6XrDIcR4pYTjKg1KwWzTv3AFErLuqLjZ8TC5tYXnA";
+const TEMP_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOSVNUUkFET1IiXSwidXNlcklkIjoxLCJlbWFpbCI6ImZyYW5BZG1pbjFAZ21haWwuY29tIiwic3ViIjoiZnJhbkFkbWluMUBnbWFpbC5jb20iLCJpYXQiOjE3NjQyMDExODYsImV4cCI6MTc2NDI4NzU4Nn0.LuK9n54okp9elwEE_z8CSBGlBYG265n06OxfjnJzr5I";
 
 export interface UsuarioPerfil {
     id: number;
