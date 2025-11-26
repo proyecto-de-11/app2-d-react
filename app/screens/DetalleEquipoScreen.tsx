@@ -1,5 +1,7 @@
 import { obtenerEquipoPorId } from '@/services/equipos.service';
+import { obtenerMiembrosEquipo } from '@/services/miembros.service';
 import { Equipo } from '@/types/equipo-types';
+import { Miembro } from '@/types/miembro-types';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,7 +14,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,8 +23,11 @@ export default function DetalleEquipoScreen() {
     const params = useLocalSearchParams();
 
     const [equipo, setEquipo] = useState<Equipo | null>(null);
+    const [miembros, setMiembros] = useState<Miembro[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMiembros, setLoadingMiembros] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [totalMiembros, setTotalMiembros] = useState(0);
 
     // Obtener equipoId de los parámetros
     const equipoId = params.equipoId ? parseInt(params.equipoId as string) : null;
@@ -30,6 +35,7 @@ export default function DetalleEquipoScreen() {
     useEffect(() => {
         if (equipoId) {
             cargarEquipo();
+            cargarMiembros();
         } else {
             setError('No se proporcionó ID del equipo');
             setLoading(false);
@@ -49,6 +55,25 @@ export default function DetalleEquipoScreen() {
             setError(err instanceof Error ? err.message : 'Error al cargar el equipo');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const cargarMiembros = async () => {
+        if (!equipoId) return;
+
+        try {
+            setLoadingMiembros(true);
+            const response = await obtenerMiembrosEquipo(equipoId, {
+                page: 0,
+                size: 50,
+                sort: ['id']
+            });
+            setMiembros(response.content);
+            setTotalMiembros(response.totalElements);
+        } catch (err) {
+            console.error('Error cargando miembros:', err);
+        } finally {
+            setLoadingMiembros(false);
         }
     };
 
@@ -256,6 +281,66 @@ export default function DetalleEquipoScreen() {
                         </View>
                     </View>
 
+                    {/* Miembros del equipo */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Ionicons name="people" size={20} color="#7033FF" />
+                            <Text style={styles.sectionTitle}>
+                                Miembros ({totalMiembros})
+                            </Text>
+                        </View>
+
+                        {loadingMiembros ? (
+                            <View style={styles.loadingMiembrosContainer}>
+                                <ActivityIndicator size="small" color="#7033FF" />
+                                <Text style={styles.loadingMiembrosText}>Cargando miembros...</Text>
+                            </View>
+                        ) : miembros.length > 0 ? (
+                            <View style={styles.miembrosContainer}>
+                                {miembros.map((miembro, index) => (
+                                    <View key={miembro.id} style={styles.miembroItem}>
+                                        <View style={styles.miembroInfo}>
+                                            <View style={styles.miembroIconContainer}>
+                                                <Ionicons name="person-circle" size={40} color="#7033FF" />
+                                            </View>
+                                            <View style={styles.miembroDetails}>
+                                                <View style={styles.miembroHeader}>
+                                                    <Text style={styles.miembroUsuarioId}>Usuario #{miembro.usuarioId}</Text>
+                                                    <View style={[
+                                                        styles.rolBadge,
+                                                        miembro.rol.toLowerCase() === 'capitan' && styles.rolCapitan,
+                                                        miembro.rol.toLowerCase() === 'jugador' && styles.rolJugador
+                                                    ]}>
+                                                        <Text style={styles.rolText}>
+                                                            {miembro.rol}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                                <View style={styles.miembroMeta}>
+                                                    <Text style={styles.miembroMetaText}>
+                                                        #{miembro.numeroCamiseta} • {miembro.posicion}
+                                                    </Text>
+                                                    <View style={[
+                                                        styles.estadoBadgeSmall,
+                                                        miembro.estado.toLowerCase() === 'activo' && styles.estadoActivo,
+                                                        miembro.estado.toLowerCase() === 'inactivo' && styles.estadoInactivo
+                                                    ]}>
+                                                        <Text style={styles.estadoBadgeText}>{miembro.estado}</Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        ) : (
+                            <View style={styles.emptyMiembros}>
+                                <Ionicons name="people-outline" size={48} color="#D0D0D0" />
+                                <Text style={styles.emptyMiembrosText}>No hay miembros en este equipo</Text>
+                            </View>
+                        )}
+                    </View>
+
                     {/* Botones de acción */}
                     <View style={styles.actionsContainer}>
                         <TouchableOpacity style={styles.actionButton}>
@@ -263,13 +348,6 @@ export default function DetalleEquipoScreen() {
                                 <Ionicons name="pencil" size={20} color="#fff" />
                                 <Text style={styles.actionButtonText}>Editar Equipo</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
-                            <View style={styles.secondaryButtonContent}>
-                                <Ionicons name="people-outline" size={20} color="#7033FF" />
-                                <Text style={styles.secondaryButtonText}>Ver Miembros</Text>
-                            </View>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -551,5 +629,98 @@ const styles = StyleSheet.create({
         color: '#7033FF',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    // Estilos para miembros
+    loadingMiembrosContainer: {
+        paddingVertical: 30,
+        alignItems: 'center',
+    },
+    loadingMiembrosText: {
+        marginTop: 10,
+        fontSize: 14,
+        color: '#8A8A93',
+    },
+    miembrosContainer: {
+        gap: 12,
+    },
+    miembroItem: {
+        backgroundColor: '#F9F9F9',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 8,
+    },
+    miembroInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    miembroIconContainer: {
+        marginRight: 12,
+    },
+    miembroDetails: {
+        flex: 1,
+    },
+    miembroHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    miembroUsuarioId: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#1A1A1A',
+    },
+    rolBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        backgroundColor: '#E0E0E0',
+    },
+    rolCapitan: {
+        backgroundColor: '#FFE5B4',
+    },
+    rolJugador: {
+        backgroundColor: '#E3F2FD',
+    },
+    rolText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#1A1A1A',
+        textTransform: 'capitalize',
+    },
+    miembroMeta: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    miembroMetaText: {
+        fontSize: 13,
+        color: '#666',
+    },
+    estadoBadgeSmall: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    estadoActivo: {
+        backgroundColor: '#E8F5E9',
+    },
+    estadoInactivo: {
+        backgroundColor: '#FFEBEE',
+    },
+    estadoBadgeText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#1A1A1A',
+        textTransform: 'capitalize',
+    },
+    emptyMiembros: {
+        paddingVertical: 40,
+        alignItems: 'center',
+    },
+    emptyMiembrosText: {
+        fontSize: 14,
+        color: '#8A8A93',
+        marginTop: 10,
     },
 });

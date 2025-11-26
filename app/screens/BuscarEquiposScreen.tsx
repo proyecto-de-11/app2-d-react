@@ -1,3 +1,4 @@
+import { enviarSolicitudUnirse } from '@/services/invitaciones.service';
 import type { Equipo, EquiposPaginados } from '@/types/equipo-types';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +8,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Image,
     RefreshControl,
     ScrollView,
@@ -15,7 +17,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 const EQUIPOS_BASE_URL = 'https://apiequiposyjugadores.onrender.com';
@@ -109,63 +111,138 @@ const BuscarEquiposScreen = () => {
         router.push(`/screens/DetalleEquipoScreen?equipoId=${equipoId}`);
     };
 
+    // Función para solicitar unirse a un equipo
+    const handleSolicitarUnirse = async (equipoId: number, equipoNombre: string) => {
+        try {
+            const userId = await AsyncStorage.getItem('userId');
+
+            if (!userId) {
+                Alert.alert('Error', 'No se pudo obtener tu información de usuario');
+                return;
+            }
+
+            const usuarioId = parseInt(userId);
+
+            Alert.alert(
+                'Solicitar unirse',
+                `¿Deseas enviar una solicitud para unirte a "${equipoNombre}"?`,
+                [
+                    {
+                        text: 'Cancelar',
+                        style: 'cancel'
+                    },
+                    {
+                        text: 'Enviar solicitud',
+                        onPress: async () => {
+                            try {
+                                await enviarSolicitudUnirse({
+                                    equipoId: equipoId,
+                                    usuarioInvitadoId: usuarioId,
+                                    usuarioRemitenteId: usuarioId,
+                                    mensaje: 'Quiero unirme al equipo'
+                                });
+
+                                Alert.alert(
+                                    'Solicitud enviada',
+                                    'Tu solicitud ha sido enviada exitosamente. El equipo revisará tu solicitud.',
+                                    [{ text: 'OK' }]
+                                );
+                            } catch (error) {
+                                Alert.alert(
+                                    'Error',
+                                    error instanceof Error ? error.message : 'No se pudo enviar la solicitud'
+                                );
+                            }
+                        }
+                    }
+                ]
+            );
+        } catch (error) {
+            console.error('Error al solicitar unirse:', error);
+            Alert.alert('Error', 'Ocurrió un error al procesar tu solicitud');
+        }
+    };
+
     // Renderizar tarjeta de equipo
     const renderEquipoCard = (equipo: Equipo) => (
-        <TouchableOpacity
+        <View
             key={equipo.id}
             style={styles.equipoCard}
-            onPress={() => handleEquipoPress(equipo.id)}
-            activeOpacity={0.7}
         >
-            <View style={styles.cardHeader}>
-                <Image
-                    source={{ uri: equipo.logo || 'https://via.placeholder.com/80' }}
-                    style={styles.equipoLogo}
-                />
-                <View style={styles.equipoInfo}>
-                    <Text style={styles.equipoNombre} numberOfLines={1}>
-                        {equipo.nombre}
-                    </Text>
-                    <View style={styles.infoRow}>
-                        <Ionicons name="location-outline" size={14} color="#8A8A93" />
-                        <Text style={styles.equipoCiudad} numberOfLines={1}>
-                            {equipo.ciudad}
+            <TouchableOpacity
+                onPress={() => handleEquipoPress(equipo.id)}
+                activeOpacity={0.7}
+            >
+                <View style={styles.cardHeader}>
+                    <Image
+                        source={{ uri: equipo.logo || 'https://via.placeholder.com/80' }}
+                        style={styles.equipoLogo}
+                    />
+                    <View style={styles.equipoInfo}>
+                        <Text style={styles.equipoNombre} numberOfLines={1}>
+                            {equipo.nombre}
                         </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <MaterialCommunityIcons name="account-group" size={14} color="#8A8A93" />
-                        <Text style={styles.equipoMiembros}>
-                            Máx: {equipo.maxMiembros} miembros
-                        </Text>
-                    </View>
-                </View>
-                <View style={styles.cardActions}>
-                    <View style={styles.ratingContainer}>
-                        <Ionicons name="star" size={16} color="#FFC700" />
-                        <Text style={styles.ratingText}>
-                            {equipo.calificacionPromedio > 0
-                                ? equipo.calificacionPromedio.toFixed(1)
-                                : 'N/A'}
-                        </Text>
-                    </View>
-                    {equipo.requiereAprobacion && (
-                        <View style={styles.badgeContainer}>
-                            <Ionicons name="shield-checkmark" size={14} color="#7033FF" />
+                        <View style={styles.infoRow}>
+                            <Ionicons name="location-outline" size={14} color="#8A8A93" />
+                            <Text style={styles.equipoCiudad} numberOfLines={1}>
+                                {equipo.ciudad}
+                            </Text>
                         </View>
-                    )}
+                        <View style={styles.infoRow}>
+                            <MaterialCommunityIcons name="account-group" size={14} color="#8A8A93" />
+                            <Text style={styles.equipoMiembros}>
+                                Máx: {equipo.maxMiembros} miembros
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={styles.cardActions}>
+                        <View style={styles.ratingContainer}>
+                            <Ionicons name="star" size={16} color="#FFC700" />
+                            <Text style={styles.ratingText}>
+                                {equipo.calificacionPromedio > 0
+                                    ? equipo.calificacionPromedio.toFixed(1)
+                                    : 'N/A'}
+                            </Text>
+                        </View>
+                        {equipo.requiereAprobacion && (
+                            <View style={styles.badgeContainer}>
+                                <Ionicons name="shield-checkmark" size={14} color="#7033FF" />
+                            </View>
+                        )}
+                    </View>
                 </View>
-            </View>
 
-            <View style={styles.cardFooter}>
-                <View style={styles.colorIndicators}>
-                    <View style={[styles.colorDot, { backgroundColor: equipo.colorPrincipal }]} />
-                    <View style={[styles.colorDot, { backgroundColor: equipo.colorSecundario }]} />
+                <View style={styles.cardFooter}>
+                    <View style={styles.colorIndicators}>
+                        <View style={[styles.colorDot, { backgroundColor: equipo.colorPrincipal }]} />
+                        <View style={[styles.colorDot, { backgroundColor: equipo.colorSecundario }]} />
+                    </View>
+                    <Text style={styles.equipoDescripcion} numberOfLines={2}>
+                        {equipo.descripcion}
+                    </Text>
                 </View>
-                <Text style={styles.equipoDescripcion} numberOfLines={2}>
-                    {equipo.descripcion}
-                </Text>
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+
+            {/* Botón de solicitar unirse */}
+            <TouchableOpacity
+                style={styles.joinButton}
+                onPress={(e) => {
+                    e.stopPropagation();
+                    handleSolicitarUnirse(equipo.id, equipo.nombre);
+                }}
+                activeOpacity={0.8}
+            >
+                <LinearGradient
+                    colors={['#7033FF', '#B34CFF']}
+                    style={styles.joinButtonGradient}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                >
+                    <Ionicons name="person-add" size={16} color="#fff" />
+                    <Text style={styles.joinButtonText}>Solicitar unirse</Text>
+                </LinearGradient>
+            </TouchableOpacity>
+        </View>
     );
 
     return (
@@ -506,6 +583,28 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#666',
         lineHeight: 18,
+    },
+    joinButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginTop: 12,
+        shadowColor: '#7033FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    joinButtonGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        gap: 8,
+    },
+    joinButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
     },
     paginationContainer: {
         flexDirection: 'row',
