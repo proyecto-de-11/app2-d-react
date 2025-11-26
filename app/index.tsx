@@ -1,4 +1,5 @@
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+
+import { Feather, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -19,44 +20,34 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// ======================================================================================
-// HOME SCREEN API FIX (BASE64 IMAGES)
-// - Updates the `Cancha` interface to include the new `imagenes` field.
-// - Modifies the `PopularCourtCard` to correctly render Base64 encoded images.
-// - Creates a `data:image/jpeg;base64,` URI if an image is present.
-// - Includes a fallback to a placeholder image if `imagenes` is null.
-// ======================================================================================
-
 interface UserData {
   nombreCompleto: string;
   fotoPerfil: string;
 }
 
-// 1. Update the interface to include the new `imagenes` field
 interface Cancha {
   id: number;
   nombre: string;
   ubicacion: string;
   calificacion_promedio: string;
   precio_hora: string;
-  imagenes: string | null; // This field will contain the Base64 string
+  imagenes: string | null;
 }
 
 interface Publicacion {
-    id: number;
-    titulo: string;
-    descripcion: string;
-    imagen: string;
+  id: number;
+  titulo: string;
+  descripcion: string;
+  imagen: string;
 }
 
-// 2. Update the reusable component to handle Base64 images
-const PopularCourtCard: React.FC<{ court: Cancha }> = ({ court }) => {
+const PopularCourtCard: React.FC<{ court: Cancha; onPress: () => void }> = ({ court, onPress }) => {
   const imageSource = court.imagenes
     ? { uri: `data:image/jpeg;base64,${court.imagenes}` }
-    : { uri: `https://picsum.photos/seed/${court.id}/200/200` }; // Fallback
+    : { uri: `https://picsum.photos/seed/${court.id}/200/200` };
 
   return (
-    <TouchableOpacity style={styles.popularCourtCard}>
+    <TouchableOpacity style={styles.popularCourtCard} onPress={onPress}>
       <Image source={imageSource} style={styles.popularCourtImage} />
       <View style={styles.popularCourtInfo}>
         <Text style={styles.popularCourtTitle} numberOfLines={1}>
@@ -89,8 +80,8 @@ const HomeScreen = () => {
   const [isProfileModalVisible, setProfileModalVisible] = useState(false);
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
   const [loadingPublicaciones, setLoadingPublicaciones] = useState(false);
-    const [canchas, setCanchas] = useState<Cancha[]>([]);
-    const [canchasLoading, setCanchasLoading] = useState(false);
+  const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const [canchasLoading, setCanchasLoading] = useState(false);
 
   const fetchUserData = async () => {
     setLoading(true);
@@ -132,6 +123,18 @@ const HomeScreen = () => {
     }
   };
 
+  const fetchCanchas = async () => {
+    setCanchasLoading(true);
+    try {
+      const response = await axios.get('https://apicanchasyreservas.onrender.com/api/canchas');
+      setCanchas(response.data);
+    } catch (error) {
+      console.error('Failed to fetch canchas:', error);
+    } finally {
+      setCanchasLoading(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       const checkProfileStatus = async () => {
@@ -145,16 +148,16 @@ const HomeScreen = () => {
       };
       checkProfileStatus();
       fetchPublicaciones();
+      fetchCanchas();
     }, [])
   );
 
-  // 3. Create the navigation handler function
-  /*const handleCourtPress = (courtId: number) => {
+  const handleCourtPress = (courtId: number) => {
     router.push({
       pathname: '/screens/CreateReservationScreen',
       params: { id: courtId },
     });
-  };*/
+  };
 
   const handleLogout = async () => {
     setMenuVisible(false);
@@ -178,13 +181,7 @@ const HomeScreen = () => {
 
   const renderPopularCourts = () => {
     if (canchasLoading) {
-      return (
-        <ActivityIndicator
-          size="large"
-          color="#7033FF"
-          style={{ marginTop: 20 }}
-        />
-      );
+      return <ActivityIndicator size="large" color="#7033FF" style={{ marginTop: 20 }} />;
     }
 
     if (canchas.length === 0) {
@@ -196,7 +193,7 @@ const HomeScreen = () => {
     }
 
     return canchas.map((court) => (
-      <PopularCourtCard key={court.id} court={court} />
+      <PopularCourtCard key={court.id} court={court} onPress={() => handleCourtPress(court.id)} />
     ));
   };
 
@@ -213,27 +210,18 @@ const HomeScreen = () => {
           <View>
             <Text style={styles.welcomeSubtitle}>Bienvenido,</Text>
             {loading ? (
-              <ActivityIndicator
-                color="#1A1A1A"
-                style={{ alignSelf: 'flex-start' }}
-              />
+              <ActivityIndicator color="#1A1A1A" style={{ alignSelf: 'flex-start' }} />
             ) : (
               <Text style={styles.welcomeTitle}>{firstName}</Text>
             )}
           </View>
-          <TouchableOpacity
-            style={styles.profileButton}
-            onPress={() => setMenuVisible(true)}
-          >
+          <TouchableOpacity style={styles.profileButton} onPress={() => setMenuVisible(true)}>
             {loading || !userData?.fotoPerfil ? (
               <View style={styles.profileIconPlaceholder}>
                 <Feather name="user" size={28} color="#7033FF" />
               </View>
             ) : (
-              <Image
-                source={{ uri: userData.fotoPerfil }}
-                style={styles.profileImage}
-              />
+              <Image source={{ uri: userData.fotoPerfil }} style={styles.profileImage} />
             )}
           </TouchableOpacity>
         </View>
@@ -255,10 +243,7 @@ const HomeScreen = () => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Promociones</Text>
           {loadingPublicaciones ? (
-            <ActivityIndicator
-              color="#1A1A1A"
-              style={{ alignSelf: 'center' }}
-            />
+            <ActivityIndicator color="#1A1A1A" style={{ alignSelf: 'center' }} />
           ) : publicaciones.length > 0 ? (
             <ScrollView
               horizontal
@@ -506,7 +491,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 14,
     backgroundColor: '#f0f0f0',
-  }, // Added a bg color for placeholder
+  },
   popularCourtInfo: { flex: 1, marginLeft: 15, justifyContent: 'center' },
   popularCourtTitle: {
     fontSize: 16,
@@ -550,7 +535,6 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   navItem: { alignItems: 'center', padding: 5 },
-  // Modal styles
   profileModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
