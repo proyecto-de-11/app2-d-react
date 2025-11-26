@@ -1,6 +1,7 @@
 import { obtenerEquipoPorId } from '@/services/equipos.service';
 import { obtenerInvitacionesEquipo } from '@/services/invitaciones.service';
 import { obtenerMiembrosEquipo } from '@/services/miembros.service';
+import { obtenerTipoDeportePorId } from '@/services/tipos-deporte.service';
 import { obtenerUsuarioPorId, UsuarioPerfil } from '@/services/usuario.service';
 import { Equipo } from '@/types/equipo-types';
 import { Miembro } from '@/types/miembro-types';
@@ -36,6 +37,7 @@ export default function DetalleEquipoScreen() {
     const [totalInvitaciones, setTotalInvitaciones] = useState(0);
     const [usuarioActualId, setUsuarioActualId] = useState<number | null>(null);
     const [esMiembro, setEsMiembro] = useState(false);
+    const [nombreDeporte, setNombreDeporte] = useState<string>('');
 
     // Obtener equipoId de los parámetros
     const equipoId = params.equipoId ? parseInt(params.equipoId as string) : null;
@@ -72,6 +74,22 @@ export default function DetalleEquipoScreen() {
         if (equipo && equipo.creadoPor && !usuariosInfo[equipo.creadoPor]) {
             cargarPerfilUsuario(equipo.creadoPor);
         }
+    }, [equipo]);
+
+    // Efecto para cargar el nombre del tipo de deporte
+    useEffect(() => {
+        const cargarNombreDeporte = async () => {
+            if (equipo && equipo.tipoDeporteId) {
+                try {
+                    const tipoDeporte = await obtenerTipoDeportePorId(equipo.tipoDeporteId);
+                    setNombreDeporte(tipoDeporte.nombre);
+                } catch (err) {
+                    console.error('Error cargando tipo de deporte:', err);
+                    setNombreDeporte('Deporte desconocido');
+                }
+            }
+        };
+        cargarNombreDeporte();
     }, [equipo]);
 
     const cargarUsuarioId = async () => {
@@ -311,7 +329,7 @@ export default function DetalleEquipoScreen() {
 
                             <View style={styles.infoItem}>
                                 <Text style={styles.infoLabel}>Tipo Deporte</Text>
-                                <Text style={styles.infoValue}>ID {equipo.tipoDeporteId}</Text>
+                                <Text style={styles.infoValue}>{nombreDeporte || 'Cargando...'}</Text>
                             </View>
 
                             {equipo.nivel && (
