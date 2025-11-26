@@ -1,38 +1,57 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  ImageBackground,
-  Modal,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
+
+// ======================================================================================
+// HOME SCREEN API FIX (BASE64 IMAGES)
+// - Updates the `Cancha` interface to include the new `imagenes` field.
+// - Modifies the `PopularCourtCard` to correctly render Base64 encoded images.
+// - Creates a `data:image/jpeg;base64,` URI if an image is present.
+// - Includes a fallback to a placeholder image if `imagenes` is null.
+// ======================================================================================
+
 
 interface UserData {
   nombreCompleto: string;
   fotoPerfil: string;
 }
 
-interface Publicacion {
+// 1. Update the interface to include the new `imagenes` field
+interface Cancha {
   id: number;
-  empresa_id: number;
-  titulo: string;
-  descripcion: string;
-  imagen: string;
-  precio: number;
-  fecha_publicacion: string;
+  nombre: string;
+  ubicacion: string;
+  calificacion_promedio: string;
+  precio_hora: string;
+  imagenes: string | null; // This field will contain the Base64 string
 }
+
+// 2. Update the reusable component to handle Base64 images
+const PopularCourtCard: React.FC<{ court: Cancha }> = ({ court }) => {
+  const imageSource = court.imagenes
+    ? { uri: `data:image/jpeg;base64,${court.imagenes}` }
+    : { uri: `https://picsum.photos/seed/${court.id}/200/200` }; // Fallback
+
+  return (
+    <TouchableOpacity style={styles.popularCourtCard}>
+      <Image 
+        source={imageSource}
+        style={styles.popularCourtImage}
+      />
+      <View style={styles.popularCourtInfo}>
+          <Text style={styles.popularCourtTitle} numberOfLines={1}>{court.nombre}</Text>
+          <Text style={styles.popularCourtLocation} numberOfLines={1}>{court.ubicacion}</Text>
+          <View style={styles.popularCourtRating}>
+              <Ionicons name="star" size={16} color="#FFC700"/>
+              <Text style={styles.popularCourtRatingText}>{parseFloat(court.calificacion_promedio).toFixed(1)}</Text>
+          </View>
+      </View>
+        <View style={styles.popularCourtPriceContainer}>
+          <Text style={styles.popularCourtPrice}>${parseFloat(court.precio_hora).toFixed(2)}/hr</Text>
+        </View>
+    </TouchableOpacity>
+  );
+};
 
 const HomeScreen = () => {
   const router = useRouter();
@@ -97,6 +116,14 @@ const HomeScreen = () => {
     }, [])
   );
 
+  // 3. Create the navigation handler function
+  const handleCourtPress = (courtId: number) => {
+    router.push({ 
+        pathname: '/screens/CreateReservationScreen', 
+        params: { id: courtId }
+    });
+  };
+
   const handleLogout = async () => {
     setMenuVisible(false);
     await AsyncStorage.clear();
@@ -123,6 +150,18 @@ const HomeScreen = () => {
       <Text style={styles.categoryText}>{name}</Text>
     </TouchableOpacity>
   );
+  
+  const renderPopularCourts = () => {
+    if (canchasLoading) {
+      return <ActivityIndicator size="large" color="#7033FF" style={{marginTop: 20}}/>;
+    }
+
+    if (canchas.length === 0) {
+      return <Text style={styles.noCourtsText}>No hay canchas populares disponibles en este momento.</Text>;
+    }
+
+    return canchas.map(court => <PopularCourtCard key={court.id} court={court} />);
+  };
 
   return (
     <View style={styles.safeArea}>
@@ -391,8 +430,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 5,
+    marginBottom: 15, // Added margin for spacing between cards
   },
-  popularCourtImage: { width: 80, height: 80, borderRadius: 14 },
+  popularCourtImage: { width: 80, height: 80, borderRadius: 14, backgroundColor: '#f0f0f0' }, // Added a bg color for placeholder
   popularCourtInfo: { flex: 1, marginLeft: 15, justifyContent: 'center' },
   popularCourtTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 5 },
   popularCourtLocation: { fontSize: 14, color: '#8A8A93', marginBottom: 8 },
