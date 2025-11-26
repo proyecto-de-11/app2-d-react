@@ -176,15 +176,6 @@ const HomeScreen = () => {
     ? userData.nombreCompleto.split(' ')[0]
     : 'Usuario';
 
-  const renderCategory = (icon: any, name: string) => (
-    <TouchableOpacity key={name} style={styles.categoryCard}>
-      <View style={styles.categoryIconContainer}>
-        <MaterialCommunityIcons name={icon} size={28} color="#7033FF" />
-      </View>
-      <Text style={styles.categoryText}>{name}</Text>
-    </TouchableOpacity>
-  );
-
   const renderPopularCourts = () => {
     if (canchasLoading) {
       return (
@@ -255,20 +246,9 @@ const HomeScreen = () => {
             placeholder="Buscar..."
             placeholderTextColor="#8A8A93"
           />
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options-outline" size={24} color="#fff" />
+          <TouchableOpacity style={styles.filterButton} onPress={() => router.push('/screens/CreateReservationScreen')}>
+            <Ionicons name="add" size={24} color="#fff" />
           </TouchableOpacity>
-        </View>
-
-        {/* Categories */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Categorías</Text>
-          <View style={styles.categoriesGrid}>
-            {renderCategory('soccer-field', 'Fútbol')}
-            {renderCategory('basketball', 'Básquet')}
-            {renderCategory('tennis', 'Tenis')}
-            {renderCategory('volleyball', 'Vóley')}
-          </View>
         </View>
 
         {/* Promotions (dynamic) */}
@@ -477,36 +457,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 20,
   },
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  categoryCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  categoryIconContainer: {
-    width: 45,
-    height: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F7F3FF',
-    borderRadius: 14,
-    marginRight: 10,
-  },
-  categoryText: { fontSize: 14, color: '#1A1A1A', fontWeight: '600' },
   horizontalScrollContainer: {
     paddingHorizontal: 20,
     paddingBottom: 10,
