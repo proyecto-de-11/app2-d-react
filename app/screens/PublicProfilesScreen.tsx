@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
   },
   headerContainer: {
-      paddingTop: 10,
+      paddingTop: 40,
   },
   header: {
     flexDirection: 'row',

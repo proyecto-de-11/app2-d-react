@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: { 
       paddingBottom: 40,
-      paddingTop: 20, // Give some top space
+      paddingTop: 40, // Give some top space
     },
 
   navBar: {

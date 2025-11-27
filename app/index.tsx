@@ -390,6 +390,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 20,
+    marginTop: 40,
   },
   welcomeSubtitle: { fontSize: 16, color: '#8A8A93', fontWeight: '400' },
   welcomeTitle: { fontSize: 28, fontWeight: 'bold', color: '#1A1A1A' },
