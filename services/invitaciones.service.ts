@@ -135,6 +135,7 @@ export async function responderInvitacion(respuestaData: ResponderInvitacionDTO)
         if (!token) {
             throw new Error('No se encontró token de autenticación');
         }
+        
 
         const response = await axios.put<Invitacion>(urlCompleta, respuestaData, {
             headers: {
