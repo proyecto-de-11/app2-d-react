@@ -1,6 +1,6 @@
 import { obtenerEquipoPorId } from '@/services/equipos.service';
 import { obtenerInvitacionesEquipo } from '@/services/invitaciones.service';
-import { obtenerMiembrosEquipo } from '@/services/miembros.service';
+import { eliminarMiembro, obtenerMiembrosEquipo } from '@/services/miembros.service';
 import { obtenerTipoDeportePorId } from '@/services/tipos-deporte.service';
 import { obtenerUsuarioPorId, UsuarioPerfil } from '@/services/usuario.service';
 import { Equipo } from '@/types/equipo-types';
@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Image,
     ScrollView,
     StatusBar,
@@ -199,6 +200,34 @@ export default function DetalleEquipoScreen() {
         } finally {
             setLoadingInvitaciones(false);
         }
+    };
+
+    const handleEliminarMiembro = async (miembroId: number, nombreMiembro: string) => {
+        Alert.alert(
+            'Confirmar eliminación',
+            `¿Estás seguro de que quieres eliminar a ${nombreMiembro} del equipo?`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setLoadingMiembros(true);
+                            await eliminarMiembro(miembroId);
+                            Alert.alert('Éxito', 'Miembro eliminado correctamente');
+                            // Recargar miembros
+                            await cargarMiembros();
+                        } catch (error) {
+                            console.error('Error al eliminar miembro:', error);
+                            Alert.alert('Error', error instanceof Error ? error.message : 'No se pudo eliminar el miembro');
+                        } finally {
+                            setLoadingMiembros(false);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     if (loading) {
@@ -427,41 +456,46 @@ export default function DetalleEquipoScreen() {
                             <View style={styles.miembrosContainer}>
                                 {miembros.map((miembro, index) => (
                                     <View key={miembro.id} style={styles.miembroItem}>
-                                        <View style={styles.miembroInfo}>
-                                            <View style={styles.miembroIconContainer}>
-                                                <Ionicons name="person-circle" size={40} color="#7033FF" />
-                                            </View>
-                                            <View style={styles.miembroDetails}>
-                                                <View style={styles.miembroHeader}>
-                                                    <Text style={styles.miembroUsuarioId}>
-                                                        {usuariosInfo[miembro.usuarioId]?.nombreCompleto ||
-                                                            usuariosInfo[miembro.usuarioId]?.usuario?.email ||
-                                                            'Usuario Desconocido'}
+                                        <View style={styles.miembroIconContainer}>
+                                            <Ionicons name="person-circle" size={40} color="#7033FF" />
+                                        </View>
+                                        <View style={styles.miembroDetails}>
+                                            <Text style={styles.miembroUsuarioId} numberOfLines={1}>
+                                                {usuariosInfo[miembro.usuarioId]?.nombreCompleto ||
+                                                    usuariosInfo[miembro.usuarioId]?.usuario?.email ||
+                                                    'Usuario Desconocido'}
+                                            </Text>
+                                            <View style={styles.miembroMetaRow}>
+                                                <Text style={styles.miembroMetaText}>
+                                                    #{miembro.numeroCamiseta} • {miembro.posicion}
+                                                </Text>
+                                                <View style={[
+                                                    styles.rolBadge,
+                                                    miembro.rol.toLowerCase() === 'capitan' && styles.rolCapitan,
+                                                    miembro.rol.toLowerCase() === 'jugador' && styles.rolJugador
+                                                ]}>
+                                                    <Text style={styles.rolText}>
+                                                        {miembro.rol}
                                                     </Text>
-                                                    <View style={[
-                                                        styles.rolBadge,
-                                                        miembro.rol.toLowerCase() === 'capitan' && styles.rolCapitan,
-                                                        miembro.rol.toLowerCase() === 'jugador' && styles.rolJugador
-                                                    ]}>
-                                                        <Text style={styles.rolText}>
-                                                            {miembro.rol}
-                                                        </Text>
-                                                    </View>
                                                 </View>
-                                                <View style={styles.miembroMeta}>
-                                                    <Text style={styles.miembroMetaText}>
-                                                        #{miembro.numeroCamiseta} • {miembro.posicion}
-                                                    </Text>
-                                                    <View style={[
-                                                        styles.estadoBadgeSmall,
-                                                        miembro.estado.toLowerCase() === 'activo' && styles.estadoActivo,
-                                                        miembro.estado.toLowerCase() === 'inactivo' && styles.estadoInactivo
-                                                    ]}>
-                                                        <Text style={styles.estadoBadgeText}>{miembro.estado}</Text>
-                                                    </View>
+                                                <View style={[
+                                                    styles.estadoBadgeSmall,
+                                                    miembro.estado.toLowerCase() === 'activo' && styles.estadoActivo,
+                                                    miembro.estado.toLowerCase() === 'inactivo' && styles.estadoInactivo
+                                                ]}>
+                                                    <Text style={styles.estadoBadgeText}>{miembro.estado}</Text>
                                                 </View>
                                             </View>
                                         </View>
+                                        <TouchableOpacity
+                                            style={styles.deleteButton}
+                                            onPress={() => handleEliminarMiembro(
+                                                miembro.id,
+                                                usuariosInfo[miembro.usuarioId]?.nombreCompleto || 'este miembro'
+                                            )}
+                                        >
+                                            <Ionicons name="trash-outline" size={20} color="#FF5252" />
+                                        </TouchableOpacity>
                                     </View>
                                 ))}
                             </View>
@@ -798,27 +832,31 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 12,
         marginBottom: 8,
-    },
-    miembroInfo: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 12,
     },
     miembroIconContainer: {
-        marginRight: 12,
+        marginRight: 0,
     },
     miembroDetails: {
         flex: 1,
-    },
-    miembroHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
     },
     miembroUsuarioId: {
         fontSize: 15,
         fontWeight: '600',
         color: '#1A1A1A',
+        marginBottom: 4,
+    },
+    miembroMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flexWrap: 'wrap',
+    },
+    miembroMetaText: {
+        fontSize: 13,
+        color: '#666',
     },
     rolBadge: {
         paddingHorizontal: 10,
@@ -837,15 +875,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1A1A1A',
         textTransform: 'capitalize',
-    },
-    miembroMeta: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    miembroMetaText: {
-        fontSize: 13,
-        color: '#666',
     },
     estadoBadgeSmall: {
         paddingHorizontal: 8,
@@ -872,6 +901,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#8A8A93',
         marginTop: 10,
+    },
+    deleteButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#FFEBEE',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 8,
     },
     // Estilos para botón de menú
     menuButton: {
