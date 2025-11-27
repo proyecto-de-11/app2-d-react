@@ -308,6 +308,16 @@ const HomeScreen = () => {
               color="#8A8A93"
             />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => router.push('./screens/MyReservationsScreen')}
+          >
+            <Ionicons
+              name="bookmark-outline"
+              size={26}
+              color="#8A8A93"
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
