@@ -46,7 +46,7 @@ export default function MyChatsScreen() {
         if (!storedUserId) return;
         const response = await obtenerMisEquipos(parseInt(storedUserId, 10));
         const equipo: Equipo[] = response.content;
-        const equiposId: number[] = response.content.map((equipo) => {
+        const equiposId: number[] = await response.content.map((equipo) => {
           return equipo.id;
         });
 

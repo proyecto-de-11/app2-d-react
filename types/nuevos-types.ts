@@ -46,3 +46,17 @@ export interface RespuestaAgregarMiembro {
   message: string;
   data: DatosNuevoMiembro;
 }
+
+export interface response {
+  ok: boolean;
+  estatus:number;
+  message: string;
+  id: number;
+  chat: {
+     id: number;
+     grupoId:number;
+  activo: boolean;
+
+  }
+
+}

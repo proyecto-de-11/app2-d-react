@@ -1,6 +1,8 @@
 import type { CrearEquipoDTO, CrearMiembroDTO, Equipo, EquiposPaginados, EquiposParams } from '@/types/equipo-types';
+import { response } from '@/types/nuevos-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { agregarMiembroAlChat } from './invitaciones.service';
 
 // Base URL para equipos
 const EQUIPOS_BASE_URL = 'https://apiequiposyjugadores.onrender.com';
@@ -13,9 +15,9 @@ const EQUIPOS_BASE_URL = 'https://apiequiposyjugadores.onrender.com';
  */
 export async function obtenerMisEquipos(
     usuarioId: number,
-    params: EquiposParams = { page: 0, size: 10, sort: ['id'] }
+    params: EquiposParams = { page: 0, size: 20, sort: ['id'] }
 ): Promise<EquiposPaginados> {
-    const { page = 0, size = 10, sort = ['id'] } = params;
+    const { page = 0, size = 20, sort = ['id'] } = params;
 
     // Construir query params
     const queryParams = new URLSearchParams({
@@ -107,6 +109,11 @@ export async function crearEquipo(equipoData: CrearEquipoDTO): Promise<Equipo> {
         });
 
         console.log('✅ Equipo creado exitosamente:', response.data.id);
+
+        const resultado = await crearchat(response.data.id)
+
+    
+
         return response.data;
 
     } catch (error) {
@@ -156,6 +163,10 @@ export async function registrarMiembro(miembroData: CrearMiembroDTO): Promise<an
                 accept: '*/*',
             },
         });
+
+        const resutl = await agregarMiembroAlChat(miembroData.equipoId,miembroData.usuarioId)
+
+        console.log('agregando al jefe ak chat :',resutl?.data.chat.id)
 
         console.log('✅ Miembro registrado exitosamente:', response.data.id);
         return response.data;
@@ -228,9 +239,9 @@ export async function obtenerEquipoPorId(equipoId: number): Promise<Equipo> {
  * @returns Promise con la respuesta paginada de equipos
  */
 export async function buscarEquipos(
-    params: EquiposParams & { busqueda?: string } = { page: 0, size: 10, sort: ['id'] }
+    params: EquiposParams & { busqueda?: string } = { page: 0, size: 20, sort: ['id'] }
 ): Promise<EquiposPaginados> {
-    const { page = 0, size = 10, sort = ['id'], busqueda } = params;
+    const { page = 0, size= 20, sort = ['id'], busqueda } = params;
 
     // Construir query params
     const queryParams = new URLSearchParams({
@@ -274,4 +285,28 @@ export async function buscarEquipos(
         console.error("❌ Error inesperado al buscar:", error);
         throw new Error("Ocurrió un error desconocido al buscar equipos.");
     }
+
+    
 }
+
+async function crearchat (id:number):Promise<response | undefined>{
+
+        try {
+          const  result = await axios.post<response>('https://apimensajeria.onrender.com/api/chats/groups',{
+                id:id
+            })
+
+            if ( result.data.chat.grupoId===id  &&  result.data.ok ){
+                return result.data
+            }
+
+            throw new Error('no se puedo crear el chat para el grupo')
+
+        } catch (error) {
+            console.error(error)
+
+            
+        }
+
+
+    }
