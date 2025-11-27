@@ -19,6 +19,14 @@ import { Usuario } from '../../types/messaging-types';
 import { ChevronLeft, MessageSquare, Search, Frown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// =====================================================================================
+// FIX - PublicProfilesScreen
+// - Hides the navigation header during the initial loading state.
+// - The <Stack.Screen> component is moved outside the conditional rendering
+//   to ensure its options are applied immediately when the component mounts,
+//   preventing the header from flashing before the loading state is determined.
+// =====================================================================================
+
 export default function PublicProfilesScreen() {
   const router = useRouter();
   const [profiles, setProfiles] = useState<Usuario[]>([]);
@@ -50,7 +58,6 @@ export default function PublicProfilesScreen() {
 
   const loadProfiles = useCallback(async () => {
     try {
-      // Simulate loading for better UX
       await new Promise(resolve => setTimeout(resolve, 800)); 
       const data = await messagingService.getPublicProfiles();
       setProfiles(data);
@@ -79,17 +86,6 @@ export default function PublicProfilesScreen() {
     profiles.filter(p => 
         p.nombreCompleto.toLowerCase().includes(searchQuery.toLowerCase())
     ), [profiles, searchQuery]);
-
-  // Loading State Component
-  if (loading) {
-    return (
-      <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.loadingScreen}>
-        <StatusBar barStyle="light-content" />
-        <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Buscando perfiles...</Text>
-      </LinearGradient>
-    );
-  }
   
   const renderProfile = ({ item }: { item: Usuario }) => (
     <View style={styles.profileCard}>
@@ -112,6 +108,7 @@ export default function PublicProfilesScreen() {
 
   const ListHeader = () => (
     <View style={styles.headerContainer}>
+        {/* This is the custom header that appears only AFTER loading */}
         <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                 <ChevronLeft size={28} color="#1A1A1A" />
@@ -135,26 +132,40 @@ export default function PublicProfilesScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+      {/* This ensures the header is hidden immediately, before any rendering logic. */}
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="dark-content" />
-      <FlatList
-        data={filteredProfiles}
-        renderItem={renderProfile}
-        keyExtractor={(item) => item.usuarioId.toString()}
-        ListHeaderComponent={ListHeader}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Frown size={64} color="#C2C2D6" />
-            <Text style={styles.emptyTitle}>No se encontraron perfiles</Text>
-            <Text style={styles.emptySubtitle}>
-                Intenta con otro nombre o verifica que lo hayas escrito correctamente.
-            </Text>
-          </View>
-        }
-      />
-    </SafeAreaView>
+
+      {loading ? (
+        // Loading State: Full screen, no header
+        <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.loadingScreen}>
+          <StatusBar barStyle="light-content" />
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>Buscando perfiles...</Text>
+        </LinearGradient>
+      ) : (
+        // Content State: Custom header is part of the list
+        <SafeAreaView style={styles.container}>
+          <StatusBar barStyle="dark-content" />
+          <FlatList
+            data={filteredProfiles}
+            renderItem={renderProfile}
+            keyExtractor={(item) => item.usuarioId.toString()}
+            ListHeaderComponent={ListHeader}
+            contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Frown size={64} color="#C2C2D6" />
+                <Text style={styles.emptyTitle}>No se encontraron perfiles</Text>
+                <Text style={styles.emptySubtitle}>
+                    Intenta con otro nombre o verifica que lo hayas escrito correctamente.
+                </Text>
+              </View>
+            }
+          />
+        </SafeAreaView>
+      )}
+    </>
   );
 }
 
@@ -175,7 +186,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
   },
   headerContainer: {
-      paddingTop: 40,
+      paddingTop: 40, // Adjusted for SafeArea, as the main container is no longer a SafeAreaView
   },
   header: {
     flexDirection: 'row',
