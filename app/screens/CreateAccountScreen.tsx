@@ -19,6 +19,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import axios, { isAxiosError } from 'axios';
 
+// =====================================================================================
+// FIX - CreateAccountScreen
+// - Removes the back arrow, mirroring the change in the Login screen for consistency.
+//   This reinforces that authentication screens are the primary entry point.
+// - Aligns the remaining "Sign In" button to the right.
+// =====================================================================================
+
 const CreateAccountScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,9 +85,7 @@ const CreateAccountScreen = () => {
         <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.header}>
             <SafeAreaView style={styles.safeAreaHeader}>
                 <Animated.View style={[styles.topBar, {opacity: fadeAnim}]}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Feather name="chevron-left" size={26} color="#fff" />
-                    </TouchableOpacity>
+                    {/* FIX: Back button removed, container justifies to the end */}
                     <View style={styles.topBarTextContainer}>
                         <Text style={styles.topBarText}>¿Ya tienes cuenta?</Text>
                         <TouchableOpacity onPress={() => router.push('/login')} style={styles.getStartedButton}>
@@ -98,8 +103,8 @@ const CreateAccountScreen = () => {
             pointerEvents="box-none"
         >
             <Animated.View style={[styles.formContainer, {transform: [{translateY: formAnim}]}]} pointerEvents="auto">
-                <Text style={styles.title}>        Crea tu Cuenta</Text>
-                <Text style={styles.subtitle}>            Disfruta de los servicios de Gofit</Text>
+                <Text style={styles.title}>Crea tu Cuenta</Text>
+                <Text style={styles.subtitle}>Disfruta de los servicios de Gofit</Text>
 
                 <Text style={styles.inputLabel}>Correo Electrónico</Text>
                 <View style={styles.inputWrapper}>
@@ -161,7 +166,8 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 55 : 40,
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    // FIX: Content is pushed to the end of the flex container.
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 20,
   },
@@ -223,11 +229,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1A1A1A',
     marginBottom: 10,
+    alignSelf: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#8A8A93',
     marginBottom: 30,
+    alignSelf: 'center',
   },
   inputLabel: {
     fontSize: 15,
