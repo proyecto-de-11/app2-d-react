@@ -10,10 +10,11 @@ import {
   StatusBar,
   SafeAreaView,
   Platform,
-  Modal
+  Modal,
+  Alert
 } from 'react-native';
 import axios, { AxiosError } from 'axios';
-import { Calendar, Clock, DollarSign, MessageSquare, Tag, AlertCircle, Inbox, ArrowLeft, X } from 'lucide-react-native';
+import { Calendar, Clock, DollarSign, MessageSquare, Tag, AlertCircle, Inbox, ArrowLeft, X, Trash2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
@@ -81,6 +82,34 @@ const MyReservationsScreen = () => {
     setModalVisible(false);
     setSelectedReservation(null);
   };
+  
+  const handleDeleteReservation = async () => {
+    if (!selectedReservation) return;
+
+    Alert.alert(
+      "Confirmar Cancelación",
+      "¿Estás seguro de que quieres cancelar esta reserva? Esta acción no se puede deshacer.",
+      [
+        { text: "No, mantener", style: "cancel" },
+        {
+          text: "Sí, Cancelar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await axios.delete(`https://apicanchasyreservas.onrender.com/api/reservas/${selectedReservation.id}`);
+              setReservations(prev => prev.filter(r => r.id !== selectedReservation.id));
+              handleCloseModal();
+              Alert.alert("Éxito", "La reserva ha sido cancelada.");
+            } catch (error) {
+              console.error("Error deleting reservation:", error);
+              Alert.alert("Error", "No se pudo cancelar la reserva. Inténtalo de nuevo.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
 
   // Renders each reservation item in the list
   const renderReservationItem = ({ item }: { item: Reservation }) => (
@@ -215,8 +244,12 @@ const MyReservationsScreen = () => {
                         )}
                       </View>
                       
+                      <TouchableOpacity style={styles.modalDeleteButton} onPress={handleDeleteReservation}>
+                          <Trash2 size={20} color="#fff" />
+                          <Text style={styles.modalDeleteButtonText}>Cancelar Reserva</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity style={styles.modalConfirmButton} onPress={handleCloseModal}>
-                          <Text style={styles.modalConfirmButtonText}>Entendido</Text>
+                          <Text style={styles.modalConfirmButtonText}>Cerrar</Text>
                       </TouchableOpacity>
                   </View>
               </View>
@@ -305,7 +338,6 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   createButtonText: { color: '#5D23E4', fontSize: 16, fontWeight: 'bold' },
-  // Modal Styles
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -317,58 +349,32 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     width: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
     elevation: 5,
   },
   modalCloseIcon: { position: 'absolute', top: 10, right: 10, padding: 5 },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalContent: {
-    marginBottom: 20,
-  },
-  modalDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  modalDetailLabel: {
-    fontSize: 16,
-    color: '#555',
-    marginLeft: 10,
-    fontWeight: '500',
-  },
-  modalDetailValue: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-    textAlign: 'right',
-  },
-  modalMessageContainer: {
-    marginTop: 10,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderColor: '#eee',
-    alignItems: 'flex-start',
-  },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 20 },
+  modalContent: { marginBottom: 20 },
+  modalDetailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  modalDetailLabel: { fontSize: 16, color: '#555', marginLeft: 10, fontWeight: '500' },
+  modalDetailValue: { fontSize: 16, color: '#333', flex: 1, textAlign: 'right' },
+  modalMessageContainer: { marginTop: 10, paddingTop: 15, borderTopWidth: 1, borderColor: '#eee', alignItems: 'flex-start' },
   modalConfirmButton: {
     backgroundColor: '#5D23E4',
     borderRadius: 15,
     paddingVertical: 15,
     alignItems: 'center',
+    marginTop: 10,
   },
-  modalConfirmButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  modalConfirmButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  modalDeleteButton: {
+    flexDirection: 'row',
+    backgroundColor: '#D90429',
+    borderRadius: 15,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  modalDeleteButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
 });
 
 export default MyReservationsScreen;
