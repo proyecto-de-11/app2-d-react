@@ -9,14 +9,18 @@ import axios, { isAxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+// FIX: Import from the legacy module to solve the deprecation error.
+import * as FileSystem from 'expo-file-system/legacy';
 
-// ======================================================================================
+// =====================================================================================
 // FINAL FIX - EditProfileScreen
 // - Implements a robust, professional layout to fix the avatar clipping bug permanently.
 // - Uses a layered approach with absolute positioning for the avatar.
 // - Abandons faulty negative margin hacks for a predictable and clean UI.
 // - This is the definitive version focused on correctness and refined aesthetics.
-// ======================================================================================
+// - FIX: Image is now converted to Base64 before being sent to the server.
+// - FIX 2: Uses legacy 'expo-file-system' import to solve deprecation error.
+// =====================================================================================
 
 interface ProfileFormData {
     nombreCompleto: string;
@@ -60,7 +64,7 @@ const EditProfileScreen = () => {
   const [profileId, setProfileId] = useState<number | null>(null);
   const router = useRouter();
 
-  // --- LOGIC (UNCHANGED) ---
+  // --- LOGIC ---
   const fetchProfileData = useCallback(async () => {
     setLoading(true);
     try {
@@ -85,9 +89,27 @@ const EditProfileScreen = () => {
   };
 
   const handleImagePick = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-    if (!result.canceled) {
-      handleInputChange('fotoPerfil', result.assets[0].uri);
+    let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5, // Reducir calidad para un string base64 más pequeño
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        try {
+            // Convertir la imagen a base64 usando la API legacy
+            const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            // Crear el Data URI
+            const base64Image = `data:image/jpeg;base64,${base64}`;
+            handleInputChange('fotoPerfil', base64Image);
+        } catch (error) {
+            console.error("Error converting image to base64:", error);
+            Alert.alert('Error', 'No se pudo procesar la imagen seleccionada.');
+        }
     }
   };
 
@@ -96,6 +118,7 @@ const EditProfileScreen = () => {
     setSaving(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
+      // Ahora formData.fotoPerfil contiene el string base64 si se eligió una nueva imagen
       await axios.put(`https://apiautentificacion.onrender.com/api/perfiles/${profileId}`, formData, { headers: { Authorization: `Bearer ${token}` } });
       Alert.alert('Éxito', 'Tu perfil se ha actualizado correctamente.');
       router.back();
