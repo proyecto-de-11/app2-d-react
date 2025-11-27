@@ -1,10 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 // Base URL para usuarios
 const USUARIOS_BASE_URL = 'https://apiautentificacion.onrender.com';
-
-// Token temporal proporcionado
-const TEMP_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOSVNUUkFET1IiXSwidXNlcklkIjoxLCJlbWFpbCI6ImZyYW5BZG1pbjFAZ21haWwuY29tIiwic3ViIjoiZnJhbkFkbWluMUBnbWFpbC5jb20iLCJpYXQiOjE3NjQyMDExODYsImV4cCI6MTc2NDI4NzU4Nn0.LuK9n54okp9elwEE_z8CSBGlBYG265n06OxfjnJzr5I";
 
 export interface UsuarioPerfil {
     id: number;
@@ -37,9 +35,11 @@ export async function obtenerUsuarioPorId(usuarioId: number): Promise<UsuarioPer
     console.log('👤 Obteniendo perfil del usuario:', usuarioId);
 
     try {
+        const token = await AsyncStorage.getItem('userToken');
+
         const response = await axios.get<UsuarioPerfil>(urlCompleta, {
             headers: {
-                Authorization: `Bearer ${TEMP_TOKEN}`,
+                Authorization: token ? `Bearer ${token}` : '',
                 accept: '*/*'
             },
         });
