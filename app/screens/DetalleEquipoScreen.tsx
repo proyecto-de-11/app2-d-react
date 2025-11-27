@@ -41,6 +41,7 @@ export default function DetalleEquipoScreen() {
 
     // Obtener equipoId de los parámetros
     const equipoId = params.equipoId ? parseInt(params.equipoId as string) : null;
+    const shouldRefresh = params.refresh === 'true';
 
     useEffect(() => {
         cargarUsuarioId();
@@ -54,7 +55,7 @@ export default function DetalleEquipoScreen() {
             setError('No se proporcionó ID del equipo');
             setLoading(false);
         }
-    }, [equipoId, usuarioActualId]);
+    }, [equipoId, usuarioActualId, shouldRefresh]);
 
     useEffect(() => {
         // Verificar si el usuario es miembro cuando se cargan los miembros
@@ -498,15 +499,7 @@ export default function DetalleEquipoScreen() {
                         </View>
                     )}
 
-                    {/* Botones de acción */}
-                    <View style={styles.actionsContainer}>
-                        <TouchableOpacity style={styles.actionButton}>
-                            <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.actionButtonGradient}>
-                                <Ionicons name="pencil" size={20} color="#fff" />
-                                <Text style={styles.actionButtonText}>Editar Equipo</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>
+
                 </View>
             </ScrollView>
         </SafeAreaView>

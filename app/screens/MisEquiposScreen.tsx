@@ -227,7 +227,13 @@ export default function MisEquiposScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerContent}>
-                    <View>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => router.back()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color="#333" />
+                    </TouchableOpacity>
+                    <View style={styles.headerTextContainer}>
                         <Text style={styles.title}>Mis Equipos</Text>
                         <Text style={styles.subtitle}>
                             {equipos.length > 0
@@ -297,6 +303,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: 12,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#F7F3FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTextContainer: {
+        flex: 1,
     },
     searchButton: {
         width: 50,

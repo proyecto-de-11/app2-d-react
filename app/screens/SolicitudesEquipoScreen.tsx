@@ -1,4 +1,5 @@
 import { obtenerInvitacionesEquipo, responderInvitacion } from '@/services/invitaciones.service';
+import { obtenerUsuarioPorId, UsuarioPerfil } from '@/services/usuario.service';
 import { Invitacion } from '@/types/invitacion-types';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -36,6 +37,7 @@ export default function SolicitudesEquipoScreen() {
     const [totalElements, setTotalElements] = useState(0);
     const [usuarioActualId, setUsuarioActualId] = useState<number | null>(null);
     const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('PENDIENTE');
+    const [usuariosInfo, setUsuariosInfo] = useState<Record<number, UsuarioPerfil>>({});
 
     useEffect(() => {
         cargarUsuarioId();
@@ -84,6 +86,33 @@ export default function SolicitudesEquipoScreen() {
             setTotalElements(response.totalElements);
             setHasMore(!response.last);
             setPage(pageNumber);
+
+            // Obtener información de usuarios remitentes
+            const usuariosIds = [...new Set(response.content.map(inv => inv.usuarioRemitenteId))];
+            const idsAFetch = usuariosIds.filter(id => !usuariosInfo[id]);
+
+            if (idsAFetch.length > 0) {
+                console.log('Fetching info for senders:', idsAFetch);
+                const promesas = idsAFetch.map(id =>
+                    obtenerUsuarioPorId(id)
+                        .then((usuario: UsuarioPerfil) => ({ id, usuario }))
+                        .catch((err: any) => {
+                            console.error(`Error fetching user ${id}`, err);
+                            return { id, usuario: null };
+                        })
+                );
+
+                const resultados = await Promise.all(promesas);
+
+                const nuevosUsuariosInfo = { ...usuariosInfo };
+                resultados.forEach(({ id, usuario }: { id: number, usuario: UsuarioPerfil | null }) => {
+                    if (usuario) {
+                        nuevosUsuariosInfo[id] = usuario;
+                    }
+                });
+
+                setUsuariosInfo(prev => ({ ...prev, ...nuevosUsuariosInfo }));
+            }
 
         } catch (error) {
             console.error('Error al cargar invitaciones:', error);
@@ -143,8 +172,24 @@ export default function SolicitudesEquipoScreen() {
                                     : inv
                             ));
 
-                            Alert.alert('Éxito', `Solicitud ${nuevoEstado === 'ACEPTADA' ? 'aceptada' : 'rechazada'} correctamente`);
                             setLoading(false);
+                            
+                            if (nuevoEstado === 'ACEPTADA') {
+                                // Navegar a la pantalla de detalle del equipo
+                                Alert.alert('Éxito', 'Solicitud aceptada correctamente', [
+                                    {
+                                        text: 'Ver Equipo',
+                                        onPress: () => {
+                                            router.push({
+                                                pathname: '/screens/DetalleEquipoScreen',
+                                                params: { equipoId, refresh: 'true' }
+                                            });
+                                        }
+                                    }
+                                ]);
+                            } else {
+                                Alert.alert('Éxito', 'Solicitud rechazada correctamente');
+                            }
                         }
                     }
                 ]
@@ -188,12 +233,14 @@ export default function SolicitudesEquipoScreen() {
             <View style={styles.cardHeader}>
                 <View style={styles.userInfo}>
                     <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarText}>
-                            {item.usuarioRemitenteId.toString().slice(0, 2)}
-                        </Text>
+                        <Ionicons name="person-circle" size={40} color="#7033FF" />
                     </View>
                     <View>
-                        <Text style={styles.userName}>Usuario #{item.usuarioRemitenteId}</Text>
+                        <Text style={styles.userName}>
+                            {usuariosInfo[item.usuarioRemitenteId]?.nombreCompleto ||
+                                usuariosInfo[item.usuarioRemitenteId]?.usuario?.email ||
+                                `Usuario #${item.usuarioRemitenteId}`}
+                        </Text>
                         <Text style={styles.dateText}>
                             {new Date(item.fechaCreacion).toLocaleDateString('es-ES', {
                                 day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
