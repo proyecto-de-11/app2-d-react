@@ -7,6 +7,7 @@ import {
   Usuario,
   VerifyChatResponse,
 } from '../types/messaging-types';
+import { RespuestaChats } from '@/types/nuevos-types';
 
 const MESSAGING_API = 'https://apimensajeria.onrender.com/api';
 const AUTH_API = 'https://apiautentificacion.onrender.com/api';
@@ -97,6 +98,33 @@ export const messagingService = {
       return response.data;
     } catch (error) {
       console.error('Error al obtener mensajes:', error);
+      throw error;
+    }
+  },
+
+  async getGroupChats(equipos: number[]): Promise<{chatId:number,grupoId:number}[]> {
+    const resultado = equipos.join(',');
+    console.log('buscando los chat de estos equipos')
+    console.log(resultado)
+    try {
+      const response = await axios.get<RespuestaChats>(`${MESSAGING_API}/chats/groups/${resultado}`);
+
+      if (response.data.filtrochat.length === 0) {
+        return [];
+
+      }
+      
+      const result = response.data.filtrochat.map((chat) => {
+        return {
+          chatId: chat.id,
+          grupoId: chat.grupoId,
+        }
+      });
+      console.log('extraendo los chat de la pai con equipos')
+      
+      return result
+    } catch (error) {
+      console.error('Error al obtener chats grupales:', error);
       throw error;
     }
   },

@@ -20,6 +20,7 @@ export default function RootLayout() {
         <Stack.Screen name="screens/ChatScreen" options={{ headerShown: false }} />
         <Stack.Screen name="screens/DetalleEquipoScreen" options={{ headerShown: false }} />
         <Stack.Screen name="screens/CrearEquipoScreen" options={{ headerShown: false }} />
+         <Stack.Screen name="screens/Screen/Chat" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </MessagingProvider>

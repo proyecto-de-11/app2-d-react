@@ -83,3 +83,11 @@ export interface GetMessagesResponse {
   limit: number;
   hasMore: boolean;
 }
+
+export interface chatGrupo {
+  id:number
+  chatId:number
+  nombre:string
+  descripcion:string
+
+}
