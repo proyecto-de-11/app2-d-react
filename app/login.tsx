@@ -22,6 +22,13 @@ import axios, { isAxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Progress from 'react-native-progress';
 
+// =====================================================================================
+// FIX - LoginScreen
+// - Removes the back arrow button from the header. Since this is a primary auth screen,
+//   a back button is redundant and can confuse the user flow.
+// - The remaining "Sign Up" button is now aligned to the right for a clean look.
+// =====================================================================================
+
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -114,9 +121,7 @@ const LoginScreen = () => {
         <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.header}>
             <SafeAreaView style={styles.safeAreaHeader}>
                 <Animated.View style={[styles.topBar, {opacity: fadeAnim}]}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Feather name="chevron-left" size={26} color="#fff" />
-                    </TouchableOpacity>
+                    {/* FIX: Back button removed, container justifies to the end */}
                     <View style={styles.topBarTextContainer}>
                         <Text style={styles.topBarText}>¿No tienes cuenta?</Text>
                         <TouchableOpacity onPress={() => router.push('/screens/CreateAccountScreen')} style={styles.getStartedButton}>
@@ -134,8 +139,8 @@ const LoginScreen = () => {
             pointerEvents="box-none"
         >
             <Animated.View style={[styles.formContainer, {transform: [{translateY: formAnim}]}]} pointerEvents="auto">
-                <Text style={styles.title}>         Iniciar Sesion</Text>
-                <Text style={styles.subtitle}>             Ingresa tus datos para continuar</Text>
+                <Text style={styles.title}>Iniciar Sesión</Text>
+                <Text style={styles.subtitle}>Ingresa tus datos para continuar</Text>
 
                 <Text style={styles.inputLabel}>Correo Electrónico</Text>
                 <View style={styles.inputWrapper}>
@@ -217,7 +222,8 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 55 : 40,
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    // FIX: Content is pushed to the end of the flex container.
+    justifyContent: 'flex-end', 
     alignItems: 'center',
     paddingHorizontal: 20,
   },
@@ -279,11 +285,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1A1A1A',
     marginBottom: 10,
+    alignSelf: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#8A8A93',
     marginBottom: 30,
+    alignSelf: 'center',
   },
   inputLabel: {
     fontSize: 15,
