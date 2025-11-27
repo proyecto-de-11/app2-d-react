@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +9,8 @@ import {
   SafeAreaView,
   TextInput,
   StatusBar,
-  ActivityIndicator
+  ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,10 +33,23 @@ export default function PublicProfilesScreen() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const searchInputRef = useRef<TextInput | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Enfocar el input SOLO cuando el usuario abre la búsqueda
+  useEffect(() => {
+    if (showSearch && !loading) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+    if (!showSearch) {
+      searchInputRef.current?.blur();
+    }
+  }, [showSearch, loading]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -113,7 +126,7 @@ export default function PublicProfilesScreen() {
     </View>
   );
 
-  const ListHeader = () => (
+  const ListHeader = useMemo(() => (
     <View style={styles.headerContainer}>
         {/* This is the custom header that appears only AFTER loading */}
         <View style={styles.header}>
@@ -121,22 +134,52 @@ export default function PublicProfilesScreen() {
                 <ChevronLeft size={28} color="#1A1A1A" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Explorar Perfiles</Text>
-            <View style={{width: 44}}/>
-        </View>
-        <View style={styles.searchContainer}>
-            <View style={styles.searchInner}>
-              <Search size={20} color="#8A8A93" style={{marginRight: 10}}/>
-              <TextInput
-                  style={styles.searchInput}
-                  placeholder="Buscar por nombre..."
-                  placeholderTextColor="#8A8A93"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-              />
-            </View>
-        </View>
-    </View>
-  );
+            <TouchableOpacity
+                onPress={() => setShowSearch(prev => !prev)}
+                style={{width: 44, alignItems: 'center', justifyContent: 'center'}}
+            >
+                <Search size={22} color="#1A1A1A" />
+            </TouchableOpacity>
+         </View>
+        {showSearch && (
+          <View style={styles.searchContainer}>
+              <View style={styles.searchInner}>
+                <Search size={20} color="#8A8A93" style={{marginRight: 10}}/>
+                <TextInput
+                    ref={searchInputRef}
+                    style={styles.searchInput}
+                    placeholder="Buscar por nombre..."
+                    placeholderTextColor="#8A8A93"
+                    value={searchInput}
+                    onChangeText={setSearchInput}
+                    returnKeyType="search"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => {
+                      setSearchQuery(searchInput);
+                      Keyboard.dismiss();
+                    }}
+                 />
+                <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery(searchInput);
+                      Keyboard.dismiss();
+                    }}
+                    activeOpacity={0.8}
+                    style={{marginLeft: 8}}
+                >
+                    <LinearGradient
+                        colors={["#7033FF", "#B34CFF"]}
+                        style={styles.searchButton}
+                        start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                    >
+                        <Search size={18} color="#FFFFFF" />
+                    </LinearGradient>
+                </TouchableOpacity>
+              </View>
+          </View>
+        )}
+     </View>
+  ), [showSearch, searchInput, loading]);
 
   return (
     <>
@@ -154,11 +197,14 @@ export default function PublicProfilesScreen() {
         // Content State: Custom header is part of the list
         <SafeAreaView style={styles.container}>
           <StatusBar barStyle="dark-content" />
+          {/* Header separado para que el TextInput no se desmonte cuando la FlatList se re-renderiza */}
+          {ListHeader}
           <FlatList
             data={filteredProfiles}
             renderItem={renderProfile}
             keyExtractor={(item) => item.usuarioId.toString()}
-            ListHeaderComponent={ListHeader}
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="none"
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
@@ -229,6 +275,14 @@ const styles = StyleSheet.create({
       flex: 1,
       fontSize: 16,
       color: '#1A1A1A',
+  },
+  searchButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   listContainer: {
     paddingBottom: 20,

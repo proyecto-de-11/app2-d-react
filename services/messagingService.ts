@@ -28,6 +28,20 @@ export const messagingService = {
     }
   },
 
+  async getPublicProfilesnombres(query:string): Promise<Usuario[]> {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await axios.get(`${AUTH_API}/perfiles/publicos/buscar?nombre=${query.trim}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener perfiles públicos:', error);
+      throw error;
+    }
+  },
+
   // Obtener perfil de un usuario específico
   async getPublicProfile(usuarioId: number): Promise<Usuario> {
     try {
