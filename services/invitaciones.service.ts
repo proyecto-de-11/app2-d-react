@@ -1,4 +1,5 @@
 import type { CrearInvitacionDTO, Invitacion, ResponderInvitacionDTO } from '@/types/invitacion-types';
+import { RespuestaAgregarMiembro } from '@/types/nuevos-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
@@ -145,7 +146,11 @@ export async function responderInvitacion(respuestaData: ResponderInvitacionDTO)
 
         if (respuestaData.nuevoEstado === 'ACEPTADA') {
             console.log(`🎉 Invitación ${respuestaData.id} aceptada. ¡Bienvenido al equipo!`);
-            console.log('agregando al nuevo miembro al chat del equipo...');
+             console.log('agregando al nuevo miembro al chat del equipo...');
+            await agregarMiembroAlChat(response.data.equipo.id, respuestaData.usario);
+           
+
+            return response.data;
         }
 
         console.log('✅ Invitación respondida exitosamente:', response.data.id);
@@ -171,5 +176,26 @@ export async function responderInvitacion(respuestaData: ResponderInvitacionDTO)
         }
         console.error("❌ Error inesperado:", error);
         throw new Error("Ocurrió un error desconocido al responder la invitación.");
+    }
+
+
+    async function agregarMiembroAlChat(equipoId: number, usuarioId: number): Promise<void> {
+
+        try {
+            const response = await axios.post<RespuestaAgregarMiembro>(`https://apimensajeria.onrender.com/api/chats/add/member`,{
+                grupoId: equipoId,
+                usuarioId: usuarioId
+            })
+
+            if (response.data.ok === true) {
+                console.log('✅ Miembro agregado al chat del equipo exitosamente');
+            } else {
+                console.error('❌ Error al agregar miembro al chat del equipo:', response);
+            }
+            
+        } catch (error) {
+            
+        }
+        // Lógica para agregar el miembro al chat del equipo
     }
 }
