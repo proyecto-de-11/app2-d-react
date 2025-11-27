@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,14 +16,8 @@ import { useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { messagingService } from '../../services/messagingService';
 import { Usuario } from '../../types/messaging-types';
-import { ChevronLeft, MessageSquare, Search } from 'lucide-react-native';
+import { ChevronLeft, MessageSquare, Search, Frown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-// ======================================================================================
-// UNIFIED EDITION - PublicProfilesScreen
-// - Matches the visual identity of the new MyChatsScreen and ChatScreen.
-// - Logic is 100% untouched.
-// ======================================================================================
 
 export default function PublicProfilesScreen() {
   const router = useRouter();
@@ -32,11 +26,16 @@ export default function PublicProfilesScreen() {
   const [userId, setUserId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // --- LOGIC IS UNTOUCHED ---
   useEffect(() => {
-    loadUserId();
-    loadProfiles();
+    loadInitialData();
   }, []);
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    await loadUserId();
+    await loadProfiles();
+    setLoading(false);
+  };
 
   const loadUserId = async () => {
     try {
@@ -49,18 +48,16 @@ export default function PublicProfilesScreen() {
     }
   };
 
-  const loadProfiles = async () => {
+  const loadProfiles = useCallback(async () => {
     try {
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate loading
+      // Simulate loading for better UX
+      await new Promise(resolve => setTimeout(resolve, 800)); 
       const data = await messagingService.getPublicProfiles();
       setProfiles(data);
     } catch (error) {
       console.error('Error al cargar perfiles:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
 
   const handleMessagePress = (profile: Usuario) => {
     if (!userId) {
@@ -82,8 +79,18 @@ export default function PublicProfilesScreen() {
     profiles.filter(p => 
         p.nombreCompleto.toLowerCase().includes(searchQuery.toLowerCase())
     ), [profiles, searchQuery]);
-  // --- END OF UNTOUCHED LOGIC ---
 
+  // Loading State Component
+  if (loading) {
+    return (
+      <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.loadingScreen}>
+        <StatusBar barStyle="light-content" />
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>Buscando perfiles...</Text>
+      </LinearGradient>
+    );
+  }
+  
   const renderProfile = ({ item }: { item: Usuario }) => (
     <View style={styles.profileCard}>
         <Image source={{ uri: item.fotoPerfil || 'https://via.placeholder.com/80' }} style={styles.profileImage} />
@@ -104,7 +111,7 @@ export default function PublicProfilesScreen() {
   );
 
   const ListHeader = () => (
-    <View>
+    <View style={styles.headerContainer}>
         <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                 <ChevronLeft size={28} color="#1A1A1A" />
@@ -131,34 +138,44 @@ export default function PublicProfilesScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="dark-content" />
-      {loading ? (
-        <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#7033FF" />
-            <Text style={styles.loadingText}>Buscando perfiles...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredProfiles}
-          renderItem={renderProfile}
-          keyExtractor={(item) => item.usuarioId.toString()}
-          ListHeaderComponent={ListHeader}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>No se encontraron perfiles</Text>
-            </View>
-          }
-        />
-      )}
+      <FlatList
+        data={filteredProfiles}
+        renderItem={renderProfile}
+        keyExtractor={(item) => item.usuarioId.toString()}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Frown size={64} color="#C2C2D6" />
+            <Text style={styles.emptyTitle}>No se encontraron perfiles</Text>
+            <Text style={styles.emptySubtitle}>
+                Intenta con otro nombre o verifica que lo hayas escrito correctamente.
+            </Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 }
 
-// --- STYLES - Unified Edition ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7FF', // Unified background
+    backgroundColor: '#F7F7FF',
+  },
+  loadingScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#5D23E4', 
+  },
+  loadingText: {
+    marginTop: 20,
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  headerContainer: {
+      paddingTop: 10,
   },
   header: {
     flexDirection: 'row',
@@ -166,7 +183,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 10,
-    marginTop: 10,
   },
   headerButton: {
       padding: 5,
@@ -196,15 +212,7 @@ const styles = StyleSheet.create({
       fontSize: 16,
       color: '#1A1A1A',
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    marginTop: -80, // Adjust to center in the remaining space
-  },
   listContainer: {
-    paddingHorizontal: 20,
     paddingBottom: 20,
   },
   profileCard: {
@@ -212,6 +220,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 15,
+    marginHorizontal: 20,
     marginBottom: 15,
     alignItems: 'center',
     shadowColor: '#7033FF',
@@ -223,7 +232,7 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 65,
     height: 65,
-    borderRadius: 22, // Slightly more rounded
+    borderRadius: 22,
     backgroundColor: '#e0e0e0',
   },
   profileInfo: {
@@ -249,14 +258,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 10,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+    marginTop: 80,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4A4A6A',
+    marginTop: 20,
     textAlign: 'center',
   },
-  loadingText: {
-      marginTop: 10,
-      fontSize: 16,
-      color: '#8A8A93',
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#8A8A93',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });

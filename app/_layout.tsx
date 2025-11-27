@@ -21,6 +21,8 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{headerShown:false }} />
         <Stack.Screen name="screens/CreateReservationScreen" options={{headerShown:false }} />
         <Stack.Screen name="screens/MyReservationsScreen" options={{headerShown:false }} />
+        <Stack.Screen name='screens/publicProfileScreen' options={{headerShown:false }} />
+      
       </Stack>
     </MessagingProvider>
   );
