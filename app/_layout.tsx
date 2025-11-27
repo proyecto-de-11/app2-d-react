@@ -19,6 +19,15 @@ export default function RootLayout() {
         <Stack.Screen name="screens/SetUserIdScreen" options={{headerShown:false }} />
         <Stack.Screen name="screens/ChatScreen" options={{headerShown:false }} />
         <Stack.Screen name="(tabs)" options={{headerShown:false }} />
+        <Stack.Screen name="screens/CreateReservationScreen" options={{headerShown:false }} />
+        <Stack.Screen name="screens/MyReservationsScreen" options={{headerShown:false }} />
+        <Stack.Screen name='screens/publicProfileScreen' options={{headerShown:false }} />
+        <Stack.Screen name="screens/DetalleEquipoScreen" options={{ headerShown: false, title: 'Detalle Equipo' }} />
+        <Stack.Screen name="screens/CrearEquipoScreen" options={{ headerShown: false, title: 'Crear Equipo' }} />
+        <Stack.Screen name="screens/MisEquiposScreen" options={{ headerShown: false, title: 'Mis Equipos' }} />
+        <Stack.Screen name="screens/BuscarEquiposScreen" options={{ headerShown: false, title: 'Buscar Equipos' }} />
+        <Stack.Screen name="screens/SolicitudesEquipoScreen" options={{ headerShown: false, title: 'Solicitudes de Unión' }} />
+      
       </Stack>
     </MessagingProvider>
   );
