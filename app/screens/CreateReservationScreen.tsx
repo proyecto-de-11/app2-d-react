@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -39,24 +39,16 @@ const CreateReservationScreen = () => {
     }
   }, [id]);
 
-  const endTime = useMemo(() => {
+  const getEndTime = () => {
     const durationHours = parseFloat(duration);
     if (!isNaN(durationHours)) {
       const endTime = new Date(time.getTime() + durationHours * 60 * 60000);
       return endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     return '--:--';
-  }, [time, duration]);
+  };
 
   const handleCreateReservation = async () => {
-    const durationHours = parseFloat(duration);
-    const amount = parseFloat(totalAmount);
-
-    if (isNaN(durationHours) || isNaN(amount)) {
-      Alert.alert('Datos Inválidos', 'La duración y el monto deben ser números.');
-      return;
-    }
-
     try {
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
@@ -64,25 +56,23 @@ const CreateReservationScreen = () => {
         router.replace('/login');
         return;
       }
-
+  
       const reservationData = {
         cancha_id: parseInt(canchaId!, 10),
-        equipo_id: null,
         usuario_solicitante_id: parseInt(userId, 10),
         fecha_reserva: date.toISOString().split('T')[0],
         hora_inicio: time.toTimeString().split(' ')[0],
-        hora_fin: new Date(time.getTime() + durationHours * 60 * 60000).toTimeString().split(' ')[0],
-        duracion_horas: durationHours,
-        monto_total: amount,
+        hora_fin: new Date(time.getTime() + parseFloat(duration) * 60 * 60000).toTimeString().split(' ')[0],
+        duracion_horas: parseFloat(duration),
+        monto_total: parseFloat(totalAmount),
         mensaje_solicitud: mensaje,
       };
-
+  
       await axios.post('https://apicanchasyreservas.onrender.com/api/reservas', reservationData);
       Alert.alert('¡Éxito!', 'Tu solicitud de reserva ha sido enviada.', [
         { text: 'OK', onPress: () => router.push('/') },
       ]);
     } catch (error) {
-      console.error('Error creating reservation:', error);
       Alert.alert('Error', 'No se pudo crear la reserva. Inténtalo de nuevo.');
     }
   };
@@ -145,7 +135,7 @@ const CreateReservationScreen = () => {
                     <Ionicons name="time-outline" size={22} color="#E0D7FF" style={styles.icon} />
                     <View style={styles.textInputWrapper}>
                       <Text style={styles.inputLabel}>Hora Fin</Text>
-                      <Text style={styles.inputText}>{endTime}</Text>
+                      <Text style={styles.inputText}>{getEndTime()}</Text>
                     </View>
                   </View>
                 </View>
