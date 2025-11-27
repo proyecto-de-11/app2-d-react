@@ -3,19 +3,18 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView, SafeAreaView, StatusBar
 } from 'react-native';
-import { ArrowLeft, Edit, LogOut, Mail, Phone, Hash, MapPin, User, Calendar as CalendarIcon } from 'lucide-react-native';
+// FIX: Removed the LogOut icon as it's no longer used.
+import { ArrowLeft, Edit, Mail, Phone, Hash, MapPin, User, Calendar as CalendarIcon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
 // ======================================================================================
-// POLISHED EDITION - ProfileScreen
-// - Builds upon the functional "Clean Slate" version.
-// - Re-introduces a more sophisticated UI with floating cards and shadows.
-// - Information is now grouped into logical cards for better readability.
-// - The edit button is enhanced with a gradient to make it a clear call to action.
-// - Logic remains 100% untouched.
+// FIX - ProfileScreen
+// - Removes the explicit logout icon from the top-right corner of the profile screen
+//   to simplify the UI and prevent accidental logouts.
+// - The associated handleLogout function has also been removed for code cleanliness.
 // ======================================================================================
 
 interface UserProfile {
@@ -43,7 +42,6 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // --- LOGIC IS UNTOUCHED ---
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -63,11 +61,6 @@ const ProfileScreen = () => {
     };
     fetchUserData();
   }, []);
-
-  const handleLogout = async () => {
-      await AsyncStorage.clear();
-      router.replace('/login');
-  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -95,8 +88,8 @@ const ProfileScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
        <View style={styles.navBar}>
+            {/* FIX: The logout button is removed, leaving only the back button. */}
             <TouchableOpacity onPress={() => router.back()} style={styles.navButton}><ArrowLeft size={24} color="#fff" /></TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout} style={styles.navButton}><LogOut size={24} color="#fff" /></TouchableOpacity>
         </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -149,6 +142,7 @@ const styles = StyleSheet.create({
     right: 0, 
     zIndex: 10, 
     flexDirection: 'row', 
+    // FIX: Justify content is kept, as it will align the single item to the start.
     justifyContent: 'space-between', 
     paddingHorizontal: 15, 
   },
