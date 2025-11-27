@@ -18,6 +18,12 @@ import { Calendar, Clock, DollarSign, MessageSquare, Tag, AlertCircle, Inbox, Ar
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
+// =====================================================================================
+// FIX - MyReservationsScreen
+// - Increases the top padding of the header and back button to give them
+//   more breathing room from the top edge of the screen, improving visual comfort.
+// =====================================================================================
+
 // Define the shape of a reservation object
 interface Reservation {
   id: number;
@@ -265,7 +271,8 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   headerContainer: {
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
+    // FIX: Increased top padding for better spacing on all devices
+    paddingTop: Platform.OS === 'android' ? 55 : 45,
     paddingBottom: 15,
     paddingHorizontal: 10,
     flexDirection: 'row',
@@ -275,7 +282,8 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 15,
-    top: Platform.OS === 'android' ? 40 : 20,
+    // FIX: Adjusted top position to match the new header padding
+    top: Platform.OS === 'android' ? 55 : 45,
     padding: 5,
   },
   header: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
