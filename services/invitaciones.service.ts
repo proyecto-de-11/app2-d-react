@@ -143,6 +143,11 @@ export async function responderInvitacion(respuestaData: ResponderInvitacionDTO)
             },
         });
 
+        if (respuestaData.nuevoEstado === 'ACEPTADA') {
+            console.log(`🎉 Invitación ${respuestaData.id} aceptada. ¡Bienvenido al equipo!`);
+            console.log('agregando al nuevo miembro al chat del equipo...');
+        }
+
         console.log('✅ Invitación respondida exitosamente:', response.data.id);
         return response.data;
 
