@@ -60,7 +60,14 @@ export default function PublicProfilesScreen() {
     try {
       await new Promise(resolve => setTimeout(resolve, 800)); 
       const data = await messagingService.getPublicProfiles();
-      setProfiles(data);
+
+      const storedUserId = await AsyncStorage.getItem('userId');
+
+      const nuevaDATA = data.filter(profile => 
+        profile.usuarioId.toString() !== storedUserId
+      );
+
+      setProfiles(nuevaDATA);
     } catch (error) {
       console.error('Error al cargar perfiles:', error);
     }
