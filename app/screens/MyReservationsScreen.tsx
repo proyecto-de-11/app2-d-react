@@ -7,13 +7,13 @@ import {
   FlatList, 
   TouchableOpacity, 
   ActivityIndicator, 
-  Alert, 
   StatusBar,
   SafeAreaView,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import axios, { AxiosError } from 'axios';
-import { Calendar, Clock, DollarSign, MessageSquare, Tag, AlertCircle, Inbox, ArrowLeft } from 'lucide-react-native';
+import { Calendar, Clock, DollarSign, MessageSquare, Tag, AlertCircle, Inbox, ArrowLeft, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
@@ -36,6 +36,8 @@ const MyReservationsScreen = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
 
   // Fetches reservations from the API
   const fetchReservations = useCallback(async () => {
@@ -48,7 +50,6 @@ const MyReservationsScreen = () => {
         throw new Error("La API no devolvió un formato de datos esperado.");
       }
 
-      // Map response data and ensure IDs and amounts are numbers
       const formattedReservations = response.data.map((res, index) => ({
         ...res,
         id: res.id ?? index,
@@ -70,18 +71,22 @@ const MyReservationsScreen = () => {
   useEffect(() => {
     fetchReservations();
   }, [fetchReservations]);
+  
+  const handleCardPress = (reservation: Reservation) => {
+    setSelectedReservation(reservation);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedReservation(null);
+  };
 
   // Renders each reservation item in the list
   const renderReservationItem = ({ item }: { item: Reservation }) => (
     <TouchableOpacity 
       style={styles.reservationCard} 
-      onPress={() =>
-        Alert.alert(
-          `Reserva para Cancha ${item.cancha_id}`,
-          `Fecha: ${item.fecha_reserva}\nHora: ${item.hora_inicio} - ${item.hora_fin}\nTotal: $${(item.monto_total || 0).toFixed(2)}\nMensaje: ${item.mensaje_solicitud || 'Ninguno'}`,
-          [{ text: "Cerrar" }]
-        )
-      }
+      onPress={() => handleCardPress(item)}
     >
       <View style={styles.cardHeader}>
         <View style={styles.headerIcon}>
@@ -156,10 +161,66 @@ const MyReservationsScreen = () => {
             contentContainerStyle={styles.listContent}
           />
         ) : (
-          <View style={styles.centeredContent}>
-            <Inbox size={64} color="rgba(255, 255, 255, 0.7)" />
-            <Text style={styles.infoText}>No tienes reservas programadas.</Text>
+          <View style={styles.emptyContainer}>
+            <Inbox size={80} color="rgba(255, 255, 255, 0.5)" />
+            <Text style={styles.emptyTitle}>No tienes reservas</Text>
+            <Text style={styles.emptySubtitle}>
+                Parece que aún no has agendado ninguna cancha. ¡Anímate a organizar un partido!
+            </Text>
+            <TouchableOpacity style={styles.createButton} onPress={() => router.push('/')}>
+                <Text style={styles.createButtonText}>Explorar Canchas</Text>
+            </TouchableOpacity>
           </View>
+        )}
+
+        {selectedReservation && (
+          <Modal
+              animationType="fade"
+              transparent={true}
+              visible={isModalVisible}
+              onRequestClose={handleCloseModal}
+          >
+              <View style={styles.modalBackdrop}>
+                  <View style={styles.modalContainer}>
+                      <TouchableOpacity style={styles.modalCloseIcon} onPress={handleCloseModal}>
+                        <X size={24} color="#888" />
+                      </TouchableOpacity>
+                      <Text style={styles.modalTitle}>Reserva para Cancha {selectedReservation.cancha_id}</Text>
+                      
+                      <View style={styles.modalContent}>
+                        <View style={styles.modalDetailRow}>
+                            <Calendar size={20} color="#5D23E4" />
+                            <Text style={styles.modalDetailLabel}>Fecha:</Text>
+                            <Text style={styles.modalDetailValue}>{new Date(selectedReservation.fecha_reserva).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
+                        </View>
+                        
+                        <View style={styles.modalDetailRow}>
+                            <Clock size={20} color="#5D23E4" />
+                            <Text style={styles.modalDetailLabel}>Hora:</Text>
+                            <Text style={styles.modalDetailValue}>{selectedReservation.hora_inicio} - {selectedReservation.hora_fin}</Text>
+                        </View>
+
+                        <View style={styles.modalDetailRow}>
+                            <DollarSign size={20} color="#5D23E4" />
+                            <Text style={styles.modalDetailLabel}>Total:</Text>
+                            <Text style={styles.modalDetailValue}>${(selectedReservation.monto_total || 0).toFixed(2)}</Text>
+                        </View>
+
+                        {selectedReservation.mensaje_solicitud && (
+                            <View style={styles.modalMessageContainer}>
+                                <MessageSquare size={20} color="#5D23E4" />
+                                <Text style={styles.modalDetailLabel}>Mensaje:</Text>
+                                <Text style={styles.modalDetailValue}>{selectedReservation.mensaje_solicitud}</Text>
+                            </View>
+                        )}
+                      </View>
+                      
+                      <TouchableOpacity style={styles.modalConfirmButton} onPress={handleCloseModal}>
+                          <Text style={styles.modalConfirmButtonText}>Entendido</Text>
+                      </TouchableOpacity>
+                  </View>
+              </View>
+          </Modal>
         )}
       </SafeAreaView>
     </LinearGradient>
@@ -167,27 +228,11 @@ const MyReservationsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  centeredContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    marginTop: -50, // Adjust to be more centered visually
-  },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   headerContainer: {
-    paddingTop: Platform.OS === 'android' ? 40 : 20, // More padding on top for Android
+    paddingTop: Platform.OS === 'android' ? 40 : 20,
     paddingBottom: 15,
     paddingHorizontal: 10,
     flexDirection: 'row',
@@ -197,28 +242,12 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 15,
-    top: Platform.OS === 'android' ? 40 : 20, // Align with paddingTop
+    top: Platform.OS === 'android' ? 40 : 20,
     padding: 5,
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-  },
-  infoText: {
-    marginTop: 20,
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-  },
-  errorText: {
-    marginTop: 20,
-    fontSize: 18,
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
+  header: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  infoText: { marginTop: 20, fontSize: 18, color: 'rgba(255, 255, 255, 0.9)', textAlign: 'center' },
+  errorText: { marginTop: 20, fontSize: 18, color: '#fff', textAlign: 'center', fontWeight: 'bold' },
   retryButton: {
     marginTop: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -226,15 +255,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 25,
   },
-  retryButtonText: {
-    color: '#B22222',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  listContent: {
-    paddingHorizontal: 15,
-    paddingBottom: 20,
-  },
+  retryButtonText: { color: '#B22222', fontSize: 16, fontWeight: 'bold' },
+  listContent: { paddingHorizontal: 15, paddingBottom: 20 },
   reservationCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 20,
@@ -249,36 +271,103 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: 15,
   },
-  headerIcon: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    padding: 8,
-    marginRight: 12,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  cardBody: {
-    padding: 15,
-  },
-  cardDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
+  headerIcon: { backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 12, padding: 8, marginRight: 12 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  cardBody: { padding: 15 },
+  cardDetailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   messageRow: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     paddingTop: 10,
     marginTop: 5,
   },
-  cardDetailText: {
-    fontSize: 15,
-    color: '#E0D7FF',
-    marginLeft: 12,
+  cardDetailText: { fontSize: 15, color: '#E0D7FF', marginLeft: 12, flex: 1 },
+  emptyContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    marginTop: -60,
+  },
+  emptyTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 20, textAlign: 'center' },
+  emptySubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 30,
+  },
+  createButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 15,
+    paddingHorizontal: 35,
+    borderRadius: 30,
+    elevation: 10,
+  },
+  createButtonText: { color: '#5D23E4', fontSize: 16, fontWeight: 'bold' },
+  // Modal Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalCloseIcon: { position: 'absolute', top: 10, right: 10, padding: 5 },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalContent: {
+    marginBottom: 20,
+  },
+  modalDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  modalDetailLabel: {
+    fontSize: 16,
+    color: '#555',
+    marginLeft: 10,
+    fontWeight: '500',
+  },
+  modalDetailValue: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+    textAlign: 'right',
+  },
+  modalMessageContainer: {
+    marginTop: 10,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+    alignItems: 'flex-start',
+  },
+  modalConfirmButton: {
+    backgroundColor: '#5D23E4',
+    borderRadius: 15,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  modalConfirmButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
