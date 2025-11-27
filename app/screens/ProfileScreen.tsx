@@ -1,17 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView, SafeAreaView, StatusBar } from 'react-native';
-import { ArrowLeft, Edit, LogOut } from 'lucide-react-native';
+import {
+  View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, ScrollView, SafeAreaView, StatusBar
+} from 'react-native';
+import { ArrowLeft, Edit, LogOut, Mail, Phone, Hash, MapPin, User, Calendar as CalendarIcon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
 // ======================================================================================
-// VIBRANT EDITION - ProfileScreen (FIXED... FOR REAL)
-// - Reverted to the original export structure to fix the HMR crash.
-// - The Vibrant UI remains unchanged.
-// - Logic is 100% untouched.
+// POLISHED EDITION - ProfileScreen
+// - Builds upon the functional "Clean Slate" version.
+// - Re-introduces a more sophisticated UI with floating cards and shadows.
+// - Information is now grouped into logical cards for better readability.
+// - The edit button is enhanced with a gradient to make it a clear call to action.
+// - Logic remains 100% untouched.
 // ======================================================================================
 
 interface UserProfile {
@@ -27,14 +31,12 @@ interface UserProfile {
   pais: string;
 }
 
-const userCreations = [
-  { id: '1', imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&q=80' },
-  { id: '2', imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&q=80' },
-  { id: '3', imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&q=80' },
-  { id: '4', imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&q=80' },
-  { id: '5', imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&q=80' },
-  { id: '6', imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&q=80' },
-];
+const InfoRow = ({ icon: IconComponent, value, isLast = false }: { icon: React.ElementType, value: string, isLast?: boolean }) => (
+  <View style={[styles.infoRow, isLast && styles.infoRowLast]}>
+    <IconComponent size={20} color="#8A8A93" style={styles.infoIcon} />
+    <Text style={styles.infoValue}>{value}</Text>
+  </View>
+);
 
 const ProfileScreen = () => {
   const [userData, setUserData] = useState<UserProfile | null>(null);
@@ -47,11 +49,7 @@ const ProfileScreen = () => {
       try {
         const userId = await AsyncStorage.getItem('userId');
         const token = await AsyncStorage.getItem('userToken');
-
-        if (!userId || !token) {
-          router.replace('/login');
-          return;
-        }
+        if (!userId || !token) { router.replace('/login'); return; }
         
         const response = await axios.get(`https://apiautentificacion.onrender.com/api/perfiles/usuario/${userId}`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -71,19 +69,22 @@ const ProfileScreen = () => {
       router.replace('/login');
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) { return dateString; }
+  }
+
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7033FF" />
-      </View>
-    );
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#622BEF" /></View>;
   }
 
   if (!userData) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>No se pudieron cargar los datos del perfil.</Text>
-         <TouchableOpacity onPress={() => router.replace('/login')} style={styles.errorButton}>
+        <TouchableOpacity onPress={() => router.replace('/login')} style={styles.errorButton}>
             <Text style={styles.errorButtonText}>Volver al Inicio</Text>
         </TouchableOpacity>
       </View>
@@ -93,105 +94,134 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        {/* --- Header Section --- */}
-        <LinearGradient colors={['#5D23E4', '#A044FF']} style={styles.header}>
-          <View style={styles.navBar}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.navButton}>
-              <ArrowLeft size={24} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout} style={styles.navButton}>
-              <LogOut size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <Image 
-            source={{ uri: userData.fotoPerfil || 'https://via.placeholder.com/150' }} 
-            style={styles.avatar} 
-          />
-          <Text style={styles.name}>{userData.nombreCompleto}</Text>
-          <Text style={styles.biography}>{userData.biografia || 'Sin biografía'}</Text>
-        </LinearGradient>
+       <View style={styles.navBar}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.navButton}><ArrowLeft size={24} color="#fff" /></TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.navButton}><LogOut size={24} color="#fff" /></TouchableOpacity>
+        </View>
 
-        {/* --- Stats and Actions Section --- */}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+             <LinearGradient colors={['#622BEF', '#9D3BFF']} style={StyleSheet.absoluteFill} />
+            <Image source={{ uri: userData.fotoPerfil || 'https://via.placeholder.com/150' }} style={styles.avatar} />
+            <Text style={styles.name}>{userData.nombreCompleto}</Text>
+            <Text style={styles.biography}>{userData.biografia || 'Sin biografía'}</Text>
+        </View>
+        
         <View style={styles.contentArea}>
-          <View style={styles.statsCard}>
-            <View style={styles.statItem}><Text style={styles.statValue}>120</Text><Text style={styles.statLabel}>Creaciones</Text></View>
-            <View style={styles.statItem}><Text style={styles.statValue}>1.2M</Text><Text style={styles.statLabel}>Seguidores</Text></View>
-            <View style={styles.statItem}><Text style={styles.statValue}>340</Text><Text style={styles.statLabel}>Seguidos</Text></View>
-          </View>
-          
-          <TouchableOpacity style={styles.editButton} onPress={() => router.push('/screens/EditProfileScreen')}>
-            <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.editButtonGradient}>
-                <Edit size={18} color="#fff" style={{marginRight: 8}}/>
-                <Text style={styles.editButtonText}>Editar Perfil</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.cardTitle}>Información de Contacto</Text>
+            <View style={styles.infoCard}>
+                 <InfoRow icon={Mail} value={userData.usuario.email} />
+                 <InfoRow icon={Phone} value={userData.telefono} isLast />
+            </View>
 
-        {/* --- Content Grid Section --- */}
-        <View style={styles.gridContainer}>
-            {userCreations.map(item => (
-                <TouchableOpacity key={item.id} style={styles.gridItem}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.gridImage} />
-                </TouchableOpacity>
-            ))}
-        </View>
+            <Text style={styles.cardTitle}>Datos Personales</Text>
+            <View style={styles.infoCard}>
+                 <InfoRow icon={Hash} value={userData.documentoIdentidad} />
+                 <InfoRow icon={User} value={userData.genero} />
+                 <InfoRow icon={CalendarIcon} value={formatDate(userData.fechaNacimiento)} />
+                 <InfoRow icon={MapPin} value={`${userData.ciudad}, ${userData.pais}`} isLast />
+            </View>
 
+             <TouchableOpacity style={styles.editButton} onPress={() => router.push('/screens/EditProfileScreen')}>
+                 <LinearGradient colors={['#7033FF', '#B34CFF']} style={styles.editButtonGradient}>
+                    <Edit size={18} color="#fff" style={{marginRight: 10}}/>
+                    <Text style={styles.editButtonText}>Editar Perfil</Text>
+                </LinearGradient>
+            </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F2FB' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F4F2FB' },
-  errorText: { color: '#1A1A1A', fontSize: 18, marginBottom: 20 },
-  errorButton: { backgroundColor: '#7033FF', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20 },
-  errorButtonText: { color: '#fff', fontSize: 16 },
+  container: { flex: 1, backgroundColor: '#F7F7F8' },
+  scrollContent: { paddingBottom: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F7F7F8' },
+  errorText: { color: '#333', fontSize: 18, marginBottom: 20 },
+  errorButton: { backgroundColor: '#622BEF', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 25 },
+  errorButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+   navBar: { 
+    position: 'absolute', 
+    top: StatusBar.currentHeight || 40, 
+    left: 0, 
+    right: 0, 
+    zIndex: 10, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 15, 
+  },
+  navButton: { padding: 10 },
 
   header: {
     alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 60, // Increased padding to push down the stats card
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
+    justifyContent: 'center',
+    paddingTop: (StatusBar.currentHeight || 40) + 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    overflow: 'hidden',
   },
-  navBar: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, position: 'absolute', top: 50 },
-  navButton: { padding: 10 },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 30,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 15,
   },
-  name: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginTop: 15 },
-  biography: { fontSize: 15, color: 'rgba(255, 255, 255, 0.9)', marginTop: 5, paddingHorizontal: 30, textAlign: 'center' },
+  name: { fontSize: 22, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  biography: { fontSize: 15, color: 'rgba(255, 255, 255, 0.9)', marginTop: 8, textAlign: 'center', lineHeight: 21 },
   
   contentArea: {
-    paddingHorizontal: 20,
-    marginTop: -40, // Pulls the content up to overlap the header
+    padding: 20,
   },
-  statsCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8A8A93',
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    marginTop: 15,
+  },
+  infoCard: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 15,
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  statItem: { alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A' },
-  statLabel: { fontSize: 14, color: '#8A8A93', marginTop: 4 },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  infoRowLast: {
+      borderBottomWidth: 0,
+  },
+  infoIcon: {
+    marginRight: 15,
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    flex: 1, // Allows text to wrap
+  },
 
   editButton: {
-      borderRadius: 25,
+      borderRadius: 30,
+      marginTop: 30,
       shadowColor: '#7033FF',
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.3,
@@ -202,26 +232,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderRadius: 25,
+    paddingVertical: 16,
+    borderRadius: 30,
   },
-  editButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginTop: 25,
-  },
-  gridItem: {
-    width: '32%',
-    height: 120,
-    marginBottom: 5,
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  gridImage: { width: '100%', height: '100%' },
+  editButtonText: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
 });
 
 export default ProfileScreen;
