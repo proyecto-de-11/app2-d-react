@@ -234,9 +234,6 @@ const HomeScreen = () => {
             placeholder="Buscar..."
             placeholderTextColor="#8A8A93"
           />
-          <TouchableOpacity style={styles.filterButton} onPress={() => router.push('/screens/CreateReservationScreen')}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </TouchableOpacity>
         </View>
 
         {/* Promotions (dynamic) */}
@@ -434,15 +431,6 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     marginLeft: 10,
     fontWeight: '500',
-  },
-  filterButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 14,
-    backgroundColor: '#7033FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
   },
   sectionContainer: { marginTop: 15 },
   sectionTitle: {
